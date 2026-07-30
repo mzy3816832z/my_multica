@@ -691,7 +691,7 @@ def tc_apt_020():
 
 
 def tc_apt_023():
-    """户型详情-正常展示"""
+    """户型详情-正常展示（严格校验：字段需翻译为中文标签，租金需为真实数值）"""
     new_context()
     lst = api('/apartments/', body={'page': 1, 'page_size': 1, 'keyword': '浦东'})
     apt_id = lst['items'][0]['id']
@@ -704,7 +704,13 @@ def tc_apt_023():
     shot('TC-APT-023_room_detail')
     body_text = PAGE.inner_text('body')
     expect('温馨一居室' in body_text, '户型详情未展示名称')
-    expect('租' in body_text, '户型详情未展示租金方案')
+    # 严格校验：户型/内外窗必须显示中文标签，不得显示原始编码
+    for raw_code in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'):
+        expect(raw_code not in body_text,
+               f'户型/内外窗未翻译为中文标签，页面直接显示原始编码「{raw_code}」（后端未返回 *_label 字段）')
+    # 租金必须显示真实数值，不得出现 ¥? 占位
+    expect('¥?' not in body_text and '? /月' not in body_text, '租金显示为占位符「¥?」，未展示真实月租金')
+    expect('租期租金方案' in body_text or '租' in body_text, '户型详情未展示租金方案')
 
 
 # ---------- 三、收藏模块 ----------
