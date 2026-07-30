@@ -157,7 +157,7 @@ def create_apartment(token, name, district_id=1, street_id=2, rent=3500):
             'sort': 0,
             'rental_plans': [
                 {'lease_term': '1_year', 'monthly_rent': rent, 'payment_method': 'pay_1_deposit_1'},
-                {'lease_term': '6_month', 'monthly_rent': rent + 200, 'payment_method': 'pay_3_deposit_1'},
+                {'lease_term': '6_months', 'monthly_rent': rent + 200, 'payment_method': 'pay_3_deposit_1'},
             ],
         }],
     }

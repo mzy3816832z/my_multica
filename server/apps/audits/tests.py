@@ -563,7 +563,7 @@ class AdminAuditApproveTests(TestCase):
                         'floor': 3,
                         'sort': 1,
                         'rental_plans': [
-                            {'lease_term': '3_month', 'monthly_rent': 3500, 'payment_method': 'pay_3_deposit_1'},
+                            {'lease_term': '3_months', 'monthly_rent': 3500, 'payment_method': 'pay_3_deposit_1'},
                         ],
                     },
                 ],

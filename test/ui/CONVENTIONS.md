@@ -29,7 +29,7 @@ for raw_code in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inne
 | 内外窗 window_type | inner / outer | 内窗 / 外窗 |
 | 朝向 orientation | east / south | 东 / 南 |
 | 设施 facilities | air_conditioner / wifi | 空调 / WiFi |
-| 租期 lease_term | 1_year / 6_month | 1年 / 半年 |
+| 租期 lease_term | 1_year / 6_months | 1年 / 半年 |
 | 支付方式 payment_method | pay_1_deposit_1 | 押一付一 |
 | 审核状态 status | pending / approved / rejected | 待审核 / 已通过 / 已驳回 |
 | 身份角色 role | tenant / landlord / admin | 租客 / 商家 / 管理员 |

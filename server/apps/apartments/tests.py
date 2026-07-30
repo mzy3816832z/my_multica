@@ -55,7 +55,7 @@ class PublicApartmentListTests(TestCase):
             sort=0,
         )
         RentalPlan.objects.create(room_type=self.room_a, lease_term='1_month', monthly_rent=3000, payment_method='pay_1_deposit_1')
-        RentalPlan.objects.create(room_type=self.room_a, lease_term='6_month', monthly_rent=2800, payment_method='pay_3_deposit_1')
+        RentalPlan.objects.create(room_type=self.room_a, lease_term='6_months', monthly_rent=2800, payment_method='pay_3_deposit_1')
 
         # 创建已上架房源 B（黄浦区，价格更高）
         self.apartment_b = Apartment.objects.create(
@@ -378,7 +378,7 @@ class ApartmentRoomTypesTests(TestCase):
             floor=5,
             sort=0,
         )
-        RentalPlan.objects.create(room_type=self.room2, lease_term='6_month', monthly_rent=2800, payment_method='pay_3_deposit_1')
+        RentalPlan.objects.create(room_type=self.room2, lease_term='6_months', monthly_rent=2800, payment_method='pay_3_deposit_1')
 
     def test_apartment_room_types_success(self):
         """获取房源下所有房型成功"""
@@ -442,7 +442,7 @@ class RoomTypeDetailTests(TestCase):
             sort=0,
         )
         RentalPlan.objects.create(room_type=self.room, lease_term='1_month', monthly_rent=3000, payment_method='pay_1_deposit_1')
-        RentalPlan.objects.create(room_type=self.room, lease_term='6_month', monthly_rent=2800, payment_method='pay_3_deposit_1')
+        RentalPlan.objects.create(room_type=self.room, lease_term='6_months', monthly_rent=2800, payment_method='pay_3_deposit_1')
 
     def test_room_type_detail_success(self):
         """获取户型详情成功"""
@@ -844,7 +844,7 @@ class MerchantApartmentUpdateTests(TestCase):
                     'floor': 3,
                     'sort': 1,
                     'rental_plans': [
-                        {'lease_term': '3_month', 'monthly_rent': 3500, 'payment_method': 'pay_3_deposit_1'},
+                        {'lease_term': '3_months', 'monthly_rent': 3500, 'payment_method': 'pay_3_deposit_1'},
                     ],
                 },
             ],
@@ -1022,7 +1022,7 @@ class CreateApartmentTests(TestCase):
                     'sort': 0,
                     'rental_plans': [
                         {'lease_term': '1_month', 'monthly_rent': 3000, 'payment_method': 'pay_1_deposit_1'},
-                        {'lease_term': '6_month', 'monthly_rent': 2800, 'payment_method': 'pay_3_deposit_1'},
+                        {'lease_term': '6_months', 'monthly_rent': 2800, 'payment_method': 'pay_3_deposit_1'},
                     ],
                 },
             ],
