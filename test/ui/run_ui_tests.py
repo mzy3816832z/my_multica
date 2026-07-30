@@ -628,7 +628,7 @@ def tc_apt_016():
 
 
 def tc_apt_017():
-    """房源详情-正常展示"""
+    """房源详情-正常展示（严格校验字段值与中文标签）"""
     new_context(storage_state=auth_state(STATE['tenant_token'], STATE['tenant_user']))
     PAGE.goto(f'{BASE_URL}/apartments')
     PAGE.wait_for_timeout(2500)
@@ -639,6 +639,10 @@ def tc_apt_017():
     body_text = PAGE.inner_text('body')
     expect('浦东张江阳光公寓' in body_text, '详情页未展示房源名称')
     expect('温馨一居室' in body_text or '房型' in body_text, '详情页未展示房型信息')
+    # 断言规则：不得出现原始编码 / 占位符 / 未处理空值
+    for bad in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer',
+                'undefined', 'null', 'None', 'NaN', '[object Object]', '¥?'):
+        expect(bad not in body_text, f'房源详情页出现异常文本「{bad}」（字段未翻译或占位符未处理）')
 
 
 def tc_apt_018():
