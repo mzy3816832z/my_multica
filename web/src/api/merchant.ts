@@ -1,0 +1,83 @@
+import request from '@/utils/request'
+import type { Apartment, MerchantAuditItem, MerchantApartmentDetail, PaginatedData } from '@/types'
+
+export interface CreateApartmentPayload {
+  name: string
+  cover_image: string
+  description: string
+  district_id: number
+  street_id: number
+  detail_address: string
+  contact_phone: string
+  room_types: {
+    name: string
+    images: string[]
+    facilities: string[]
+    layout_type: string
+    window_type: string
+    floor: number
+    rental_plans: {
+      lease_term: string
+      monthly_rent: number
+      payment_method: string
+    }[]
+  }[]
+}
+
+export interface CreateApartmentResult {
+  apartment_id: number
+  audit_id: number
+}
+
+export function createApartment(payload: CreateApartmentPayload): Promise<CreateApartmentResult> {
+  return request.post('/merchant/apartments/', payload)
+}
+
+export function getMerchantApartments(params?: { page?: number; page_size?: number }): Promise<PaginatedData<Apartment>> {
+  return request.get('/merchant/apartments/', { params })
+}
+
+export function getMerchantApartmentDetail(id: number): Promise<MerchantApartmentDetail> {
+  return request.get(`/merchant/apartments/${id}/`)
+}
+
+export interface UpdateApartmentPayload {
+  name?: string
+  cover_image?: string
+  description?: string
+  district_id?: number
+  street_id?: number
+  detail_address?: string
+  contact_phone?: string
+  room_types?: {
+    name?: string
+    images?: string[]
+    facilities?: string[]
+    layout_type?: string
+    window_type?: string
+    floor?: number
+    rental_plans?: {
+      lease_term?: string
+      monthly_rent?: number
+      payment_method?: string
+    }[]
+  }[]
+}
+
+export interface UpdateApartmentResult {
+  apartment_id: number
+  audit_id: number | null
+  updated: boolean
+}
+
+export function updateApartment(id: number, payload: UpdateApartmentPayload): Promise<UpdateApartmentResult> {
+  return request.put(`/merchant/apartments/${id}/`, payload)
+}
+
+export function deleteApartment(id: number): Promise<void> {
+  return request.delete(`/merchant/apartments/${id}/`)
+}
+
+export function getMerchantAudits(params?: { page?: number; page_size?: number }): Promise<PaginatedData<MerchantAuditItem>> {
+  return request.get('/merchant/audits/', { params })
+}
