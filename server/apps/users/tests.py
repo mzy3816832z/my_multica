@@ -25,7 +25,7 @@ def _create_verify_code(phone, purpose):
 
 def _register_user(client, phone, password, sms_code):
     """注册用户，返回响应"""
-    return client.post('/api/v1/auth/register', {
+    return client.post('/api/v1/auth/register/', {
         'phone': phone,
         'sms_code': sms_code,
         'password': password,
@@ -34,7 +34,7 @@ def _register_user(client, phone, password, sms_code):
 
 def _login_by_password(client, username, password):
     """用户名+密码登录，返回响应"""
-    return client.post('/api/v1/auth/login-by-password', {
+    return client.post('/api/v1/auth/login-by-password/', {
         'username': username,
         'password': password,
     }, content_type='application/json')
@@ -42,7 +42,7 @@ def _login_by_password(client, username, password):
 
 def _login_by_code(client, phone, sms_code):
     """验证码登录，返回响应"""
-    return client.post('/api/v1/auth/login-by-code', {
+    return client.post('/api/v1/auth/login-by-code/', {
         'phone': phone,
         'sms_code': sms_code,
     }, content_type='application/json')
@@ -75,7 +75,7 @@ def test_register_invalid_sms_code():
         resp = _register_user(c, '13800138001', 'password123', '000000')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 400002
+        assert data['code'] == 401003
 
 
 @pytest.mark.django_db
@@ -122,7 +122,7 @@ def test_login_by_password_wrong_password():
         resp = _login_by_password(c, '13800138011', 'wrongpassword')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 400002
+        assert data['code'] == 401002
 
 
 @pytest.mark.django_db
@@ -133,7 +133,7 @@ def test_login_by_password_user_not_found():
         resp = _login_by_password(c, '13800138012', 'password123')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 404001
+        assert data['code'] == 401002
 
 
 # ---------- 手机号+验证码登录 ----------
@@ -165,7 +165,7 @@ def test_login_by_code_wrong_code():
         resp = _login_by_code(c, '13800138021', '000000')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 400002
+        assert data['code'] == 401003
 
 
 # ---------- 首次登录身份选择 ----------
@@ -179,7 +179,7 @@ def test_select_role_success():
         reg_resp = _register_user(c, '13800138030', 'password123', code)
         token = reg_resp.json()['data']['access_token']
 
-        resp = c.post('/api/v1/auth/select-role', {
+        resp = c.post('/api/v1/auth/select-role/', {
             'role': 'tenant',
         }, content_type='application/json', HTTP_AUTHORIZATION=f'Bearer {token}')
         assert resp.status_code == 200
@@ -197,11 +197,11 @@ def test_select_role_repeat():
         reg_resp = _register_user(c, '13800138031', 'password123', code)
         token = reg_resp.json()['data']['access_token']
 
-        c.post('/api/v1/auth/select-role', {
+        c.post('/api/v1/auth/select-role/', {
             'role': 'landlord',
         }, content_type='application/json', HTTP_AUTHORIZATION=f'Bearer {token}')
 
-        resp = c.post('/api/v1/auth/select-role', {
+        resp = c.post('/api/v1/auth/select-role/', {
             'role': 'tenant',
         }, content_type='application/json', HTTP_AUTHORIZATION=f'Bearer {token}')
         assert resp.status_code == 200
@@ -218,7 +218,7 @@ def test_select_role_invalid_role():
         reg_resp = _register_user(c, '13800138032', 'password123', code)
         token = reg_resp.json()['data']['access_token']
 
-        resp = c.post('/api/v1/auth/select-role', {
+        resp = c.post('/api/v1/auth/select-role/', {
             'role': 'admin',
         }, content_type='application/json', HTTP_AUTHORIZATION=f'Bearer {token}')
         assert resp.status_code == 200
@@ -237,7 +237,7 @@ def test_reset_password_success():
         _register_user(c, '13800138040', 'password123', code)
 
         reset_code = _create_verify_code('13800138040', 'reset_password')
-        resp = c.post('/api/v1/auth/reset-password', {
+        resp = c.post('/api/v1/auth/reset-password/', {
             'phone': '13800138040',
             'sms_code': reset_code,
             'new_password': 'newpassword456',
@@ -260,14 +260,14 @@ def test_reset_password_invalid_code():
         code = _create_verify_code('13800138041', 'register')
         _register_user(c, '13800138041', 'password123', code)
 
-        resp = c.post('/api/v1/auth/reset-password', {
+        resp = c.post('/api/v1/auth/reset-password/', {
             'phone': '13800138041',
             'sms_code': '000000',
             'new_password': 'newpassword456',
         }, content_type='application/json')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 400002
+        assert data['code'] == 401003
 
 
 # ---------- 修改密码 ----------
@@ -282,7 +282,7 @@ def test_change_password_success():
         token = reg_resp.json()['data']['access_token']
 
         change_code = _create_verify_code('13800138050', 'change_password')
-        resp = c.post('/api/v1/auth/change-password', {
+        resp = c.post('/api/v1/auth/change-password/', {
             'sms_code': change_code,
             'new_password': 'newpassword789',
         }, content_type='application/json', HTTP_AUTHORIZATION=f'Bearer {token}')
@@ -305,13 +305,13 @@ def test_change_password_invalid_code():
         reg_resp = _register_user(c, '13800138051', 'password123', code)
         token = reg_resp.json()['data']['access_token']
 
-        resp = c.post('/api/v1/auth/change-password', {
+        resp = c.post('/api/v1/auth/change-password/', {
             'sms_code': '000000',
             'new_password': 'newpassword789',
         }, content_type='application/json', HTTP_AUTHORIZATION=f'Bearer {token}')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 400002
+        assert data['code'] == 401003
 
 
 # ---------- 管理员登录（统一使用 login-by-password） ----------
@@ -352,7 +352,7 @@ def test_admin_login_wrong_password():
         resp = _login_by_password(c, 'admin123', 'wrongpassword')
         assert resp.status_code == 200
         data = resp.json()
-        assert data['code'] == 400002
+        assert data['code'] == 401002
 
 
 # ---------- 获取当前用户 ----------
@@ -366,7 +366,7 @@ def test_me_success():
         reg_resp = _register_user(c, '13800138070', 'password123', code)
         token = reg_resp.json()['data']['access_token']
 
-        resp = c.get('/api/v1/auth/me', HTTP_AUTHORIZATION=f'Bearer {token}')
+        resp = c.get('/api/v1/auth/me/', HTTP_AUTHORIZATION=f'Bearer {token}')
         assert resp.status_code == 200
         data = resp.json()
         assert data['code'] == 0
@@ -378,7 +378,7 @@ def test_me_unauthorized():
     """未登录访问 me 返回 401"""
     with override_settings(ALLOWED_HOSTS=['testserver']):
         c = Client()
-        resp = c.get('/api/v1/auth/me')
+        resp = c.get('/api/v1/auth/me/')
         assert resp.status_code == 401
         data = resp.json()
         assert data['code'] == 401001

@@ -79,11 +79,11 @@ def register(request):
 
     # 校验验证码
     if not verify_sms_code(phone, 'register', sms_code, mark_used=True):
-        raise BusinessException('验证码错误或已过期', code=400002)
+        raise BusinessException('验证码错误或已过期', code=ErrorCode.SMS_CODE_ERROR)
 
     # 检查是否已注册（username 即手机号）
     if User.objects.filter(username=phone).exists():
-        raise BusinessException('该手机号已注册', code=409001)
+        raise BusinessException('该手机号已注册', code=ErrorCode.CONFLICT)
 
     # 创建用户，username 写入手机号，role 为空字符串（表示未选择身份）
     user = User.objects.create(
@@ -132,13 +132,13 @@ def login_by_password(request):
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
-        raise BusinessException('用户名或密码错误', code=404001)
+        raise BusinessException('用户名或密码错误', code=ErrorCode.AUTH_FAILED)
 
     if not user.check_password(password):
-        raise BusinessException('用户名或密码错误', code=400002)
+        raise BusinessException('用户名或密码错误', code=ErrorCode.AUTH_FAILED)
 
     if not user.is_active:
-        raise BusinessException('账号已被禁用', code=403001)
+        raise BusinessException('账号已被禁用', code=ErrorCode.ACCOUNT_DISABLED)
 
     tokens = _generate_tokens(user)
     logger.info(f'[LoginByPassword] user={user.id}, username={username}')
@@ -176,15 +176,15 @@ def login_by_code(request):
 
     # 校验验证码
     if not verify_sms_code(phone, 'login', sms_code, mark_used=True):
-        raise BusinessException('验证码错误或已过期', code=400002)
+        raise BusinessException('验证码错误或已过期', code=ErrorCode.SMS_CODE_ERROR)
 
     try:
         user = User.objects.get(username=phone)
     except User.DoesNotExist:
-        raise BusinessException('用户不存在', code=404001)
+        raise BusinessException('用户不存在', code=ErrorCode.AUTH_FAILED)
 
     if not user.is_active:
-        raise BusinessException('账号已被禁用', code=403001)
+        raise BusinessException('账号已被禁用', code=ErrorCode.ACCOUNT_DISABLED)
 
     tokens = _generate_tokens(user)
     logger.info(f'[LoginByCode] user={user.id}, phone={phone}')
@@ -220,7 +220,7 @@ def select_role(request):
     user = request.user
     # 仅 role 为空时可选择
     if user.role:
-        raise BusinessException('身份已选择，不可重复操作', code=400002)
+        raise BusinessException('身份已选择，不可重复操作', code=ErrorCode.BUSINESS_ERROR)
 
     new_role = serializer.validated_data['role']
     user.role = new_role
@@ -258,12 +258,12 @@ def reset_password(request):
 
     # 校验验证码
     if not verify_sms_code(phone, 'reset_password', sms_code, mark_used=True):
-        raise BusinessException('验证码错误或已过期', code=400002)
+        raise BusinessException('验证码错误或已过期', code=ErrorCode.SMS_CODE_ERROR)
 
     try:
         user = User.objects.get(username=phone)
     except User.DoesNotExist:
-        raise BusinessException('用户不存在', code=404001)
+        raise BusinessException('用户不存在', code=ErrorCode.NOT_FOUND)
 
     user.set_password(new_password)
     user.save(update_fields=['password', 'updated_at'])
@@ -299,11 +299,11 @@ def change_password(request):
     new_password = serializer.validated_data['new_password']
 
     if not user.phone:
-        raise BusinessException('当前用户未绑定手机号', code=400002)
+        raise BusinessException('当前用户未绑定手机号', code=ErrorCode.BUSINESS_ERROR)
 
     # 校验验证码
     if not verify_sms_code(user.phone, 'change_password', sms_code, mark_used=True):
-        raise BusinessException('验证码错误或已过期', code=400002)
+        raise BusinessException('验证码错误或已过期', code=ErrorCode.SMS_CODE_ERROR)
 
     user.set_password(new_password)
     user.save(update_fields=['password', 'updated_at'])

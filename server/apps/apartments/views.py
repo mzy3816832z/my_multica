@@ -247,9 +247,9 @@ def create_apartment(request):
     """
     serializer = ApartmentCreateSerializer(data=request.data)
     if not serializer.is_valid():
-        # 提取第一个错误信息，返回 400002
+        # 提取第一个错误信息，返回 PARAM_ERROR
         first_msg = _extract_first_error(serializer.errors)
-        raise BusinessException(first_msg, code=ErrorCode.BUSINESS_ERROR)
+        raise BusinessException(first_msg, code=ErrorCode.PARAM_ERROR)
 
     data = serializer.validated_data
     landlord = request.user
@@ -439,7 +439,7 @@ def merchant_apartment_update(request, id):
     serializer = ApartmentUpdateSerializer(data=request.data, instance=apartment)
     if not serializer.is_valid():
         first_msg = _extract_first_error(serializer.errors)
-        raise BusinessException(first_msg, code=ErrorCode.BUSINESS_ERROR)
+        raise BusinessException(first_msg, code=ErrorCode.PARAM_ERROR)
 
     data = serializer.validated_data
 
