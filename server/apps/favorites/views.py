@@ -101,7 +101,7 @@ def add_favorite(request):
     request=None,
     responses={200: FavoriteListItemSerializer(many=True)},
     summary='我的收藏列表',
-    description='返回当前登录用户的收藏列表，按收藏时间（created_at）倒序，支持分页。仅包含已上架房源。',
+    description='返回当前登录用户的收藏列表，按收藏时间（created_at）倒序，支持分页。包含所有收藏记录，已下架/已删除的房源会标记 is_offline=true。',
     tags=['收藏'],
     parameters=[
         {'name': 'page', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '页码，默认 1'},
@@ -138,6 +138,7 @@ def my_favorites(request):
             'district_name': apt.district.name if apt.district else None,
             'street_name': apt.street.name if apt.street else None,
             'min_monthly_rent': apt.min_monthly_rent,
+            'is_offline': apt.status != 'published' or apt.deleted_at is not None,
             'created_at': fav.created_at,
         })
 

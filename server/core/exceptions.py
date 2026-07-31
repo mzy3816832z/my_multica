@@ -56,6 +56,15 @@ class NotFoundException(BusinessException):
     default_detail = '资源不存在'
 
 
+class GoneException(BusinessException):
+    """
+    资源已下架或删除异常
+    """
+    status_code = 410
+    default_code = ErrorCode.GONE
+    default_detail = '房源已下架，您可以在收藏列表中取消收藏'
+
+
 class ConflictException(BusinessException):
     status_code = 409
     default_code = ErrorCode.CONFLICT
