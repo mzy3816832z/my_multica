@@ -10,7 +10,10 @@ class ErrorCode:
     PARAM_ERROR = 400001
     BUSINESS_ERROR = 400002
     UNAUTHORIZED = 401001
+    AUTH_FAILED = 401002
+    SMS_CODE_ERROR = 401003
     FORBIDDEN = 403001
+    ACCOUNT_DISABLED = 403002
     NOT_FOUND = 404001
     CONFLICT = 409001
     GONE = 410001
@@ -23,7 +26,10 @@ ERROR_MESSAGES = {
     ErrorCode.PARAM_ERROR: '参数校验失败',
     ErrorCode.BUSINESS_ERROR: '业务规则校验失败',
     ErrorCode.UNAUTHORIZED: '未登录或 Token 失效',
+    ErrorCode.AUTH_FAILED: '用户名或密码错误',
+    ErrorCode.SMS_CODE_ERROR: '验证码错误或已过期',
     ErrorCode.FORBIDDEN: '无权限访问',
+    ErrorCode.ACCOUNT_DISABLED: '账号已被禁用',
     ErrorCode.NOT_FOUND: '资源不存在',
     ErrorCode.CONFLICT: '资源冲突',
     ErrorCode.GONE: '资源已下架或删除',

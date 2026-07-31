@@ -710,7 +710,7 @@ class AdminAuditRejectTests(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['code'], 400002)
+        self.assertEqual(response.json()['code'], 400001)
 
     def test_reject_already_processed(self):
         """已处理审核单再次驳回返回 400"""

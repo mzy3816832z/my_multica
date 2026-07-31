@@ -19,7 +19,7 @@ class BusinessException(APIException):
     """
     业务异常基类
     """
-    status_code = 400
+    status_code = 200
     default_code = ErrorCode.BUSINESS_ERROR
     default_detail = '业务规则校验失败'
 
@@ -51,7 +51,7 @@ class ForbiddenException(BusinessException):
 
 
 class NotFoundException(BusinessException):
-    status_code = 404
+    status_code = 200
     default_code = ErrorCode.NOT_FOUND
     default_detail = '资源不存在'
 
@@ -60,13 +60,13 @@ class GoneException(BusinessException):
     """
     资源已下架或删除异常
     """
-    status_code = 410
+    status_code = 200
     default_code = ErrorCode.GONE
     default_detail = '房源已下架，您可以在收藏列表中取消收藏'
 
 
 class ConflictException(BusinessException):
-    status_code = 409
+    status_code = 200
     default_code = ErrorCode.CONFLICT
     default_detail = '资源冲突'
 
@@ -123,7 +123,7 @@ def custom_exception_handler(exc, context):
 
         elif isinstance(exc, BusinessException):
             code = getattr(exc, 'custom_code', ErrorCode.SERVER_ERROR)
-            return unified_response(code=code, message=str(exc.detail), status_code=exc.status_code)
+            return unified_response(code=code, message=str(exc.detail), status_code=200)
 
         else:
             # 其他 DRF 异常

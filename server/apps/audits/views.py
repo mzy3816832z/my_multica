@@ -247,7 +247,7 @@ def audit_reject(request, id):
     serializer = AuditRejectSerializer(data=request.data)
     if not serializer.is_valid():
         first_msg = _extract_first_error(serializer.errors)
-        raise BusinessException(first_msg, code=ErrorCode.BUSINESS_ERROR)
+        raise BusinessException(first_msg, code=ErrorCode.PARAM_ERROR)
 
     reject_reason = serializer.validated_data['reject_reason']
     apartment = audit.apartment

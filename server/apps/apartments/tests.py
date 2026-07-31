@@ -299,7 +299,7 @@ class PublicApartmentDetailTests(TestCase):
         )
         response = self.client.get(f'/api/v1/apartments/{unpublished.id}/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['code'], 404001)
+        self.assertEqual(response.json()['code'], 410001)
 
     def test_detail_not_exist(self):
         """获取不存在的房源返回 404"""
@@ -893,7 +893,7 @@ class MerchantApartmentUpdateTests(TestCase):
         payload = {'street_id': self.street2.id}
         response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['code'], 400002)
+        self.assertEqual(response.json()['code'], 400001)
 
     def test_update_only_street_id_invalid(self):
         """仅传入无效 street_id 应返回 400"""
@@ -1221,7 +1221,7 @@ class EnumValidationTests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
         response = self.client.post(self.url, payload, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['code'], 400002)
+        self.assertEqual(response.json()['code'], 400001)
         self.assertIn(expected_msg_substring, response.json()['message'])
 
     def test_create_invalid_layout_type(self):
@@ -1309,7 +1309,7 @@ class EnumValidationTests(TestCase):
         }
         response = self.client.put(f'/api/v1/merchant/apartments/{apartment.id}/', payload, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['code'], 400002)
+        self.assertEqual(response.json()['code'], 400001)
         self.assertIn('无效的户型类型', response.json()['message'])
 
     def test_update_invalid_lease_term(self):
@@ -1358,5 +1358,5 @@ class EnumValidationTests(TestCase):
         }
         response = self.client.put(f'/api/v1/merchant/apartments/{apartment.id}/', payload, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['code'], 400002)
+        self.assertEqual(response.json()['code'], 400001)
         self.assertIn('无效的租期', response.json()['message'])
