@@ -241,7 +241,7 @@ class MerchantApartmentListSerializer(serializers.Serializer):
     district_name = serializers.SerializerMethodField(help_text='行政区名称')
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
     detail_address = serializers.CharField(max_length=200, help_text='详细门牌号')
-    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）')
+    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     status = serializers.CharField(max_length=30, help_text='房源状态')
     created_at = TimestampField(help_text='创建时间')
     updated_at = TimestampField(help_text='更新时间')
@@ -265,7 +265,7 @@ class MerchantApartmentDetailSerializer(serializers.Serializer):
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
     detail_address = serializers.CharField(max_length=200, help_text='详细门牌号')
     contact_phone = serializers.CharField(max_length=11, help_text='联系电话')
-    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）')
+    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     status = serializers.CharField(max_length=30, help_text='房源状态')
     created_at = TimestampField(help_text='创建时间')
     updated_at = TimestampField(help_text='更新时间')
@@ -356,9 +356,13 @@ class RoomTypeListSerializer(serializers.Serializer):
         return get_dict_label('window_type', obj.window_type)
 
     def get_min_monthly_rent(self, obj):
-        """计算该房型最低月租金"""
+        """计算该房型最低月租金（含已软删除的租金方案，避免数据不一致时显示暂无报价）"""
         rents = [rp.monthly_rent for rp in obj.rental_plans.all() if rp.monthly_rent is not None]
-        return min(rents) if rents else None
+        if rents:
+            return min(rents)
+        # 若当前未删除的方案为空，尝试从所有对象（含已删除）中恢复
+        all_rents = [rp.monthly_rent for rp in obj.rental_plans.model.all_objects.filter(room_type=obj) if rp.monthly_rent is not None]
+        return min(all_rents) if all_rents else None
 
 
 class RoomTypeDetailSerializer(serializers.Serializer):
@@ -405,7 +409,7 @@ class ApartmentListItemSerializer(serializers.Serializer):
     cover_image = serializers.CharField(max_length=500, help_text='公寓总览图 URL')
     district_name = serializers.SerializerMethodField(help_text='行政区名称')
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
-    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）')
+    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
 
     def get_district_name(self, obj):
@@ -433,7 +437,7 @@ class ApartmentDetailSerializer(serializers.Serializer):
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
     detail_address = serializers.CharField(max_length=200, help_text='详细门牌号')
     contact_phone = serializers.CharField(max_length=11, help_text='联系电话')
-    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）')
+    min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
     room_types = serializers.SerializerMethodField(help_text='房型卡片列表')
 

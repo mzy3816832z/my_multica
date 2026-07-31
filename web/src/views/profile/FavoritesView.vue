@@ -56,12 +56,12 @@ function goDetail(id: number) {
   router.push('/apartments/' + id)
 }
 
-async function handleCancel(id: number, event: Event) {
+async function handleCancel(apartmentId: number, event: Event) {
   event.stopPropagation()
   try {
-    await removeFavorite(id)
+    await removeFavorite(apartmentId)
     showToast('已取消收藏')
-    list.value = list.value.filter((item) => item.id !== id)
+    list.value = list.value.filter((item) => item.apartment_id !== apartmentId)
     total.value = Math.max(0, total.value - 1)
   } catch {
     // 错误已在 request 拦截器中 toast
@@ -125,7 +125,7 @@ onMounted(() => {
                 plain
                 round
                 icon="delete-o"
-                @click="handleCancel(item.id, $event)"
+                @click="handleCancel(item.apartment_id, $event)"
               >
                 取消收藏
               </van-button>

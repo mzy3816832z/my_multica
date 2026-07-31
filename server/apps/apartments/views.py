@@ -20,6 +20,7 @@ from apps.apartments.serializers import (
     MerchantApartmentListSerializer,
     RoomTypeDetailSerializer,
 )
+from apps.apartments.utils import backfill_apartment_min_rent
 from apps.audits.models import AuditRecord
 from core.exceptions import BusinessException, NotFoundException
 from core.pagination import StandardPagination
@@ -160,6 +161,10 @@ def apartment_detail(request, id):
         apartment = Apartment.objects.get(id=id, status='published')
     except Apartment.DoesNotExist:
         raise NotFoundException('房源不存在或未上架')
+
+    # 自动回填 min_monthly_rent（防御性修复历史脏数据）
+    if apartment.min_monthly_rent is None:
+        backfill_apartment_min_rent(apartment)
 
     serializer = ApartmentDetailSerializer(apartment, context={'request': request})
     return unified_response(data=serializer.data)
