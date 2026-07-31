@@ -790,6 +790,51 @@ def tc_fav_008():
     expect('徐汇滨江雅苑' not in body_text or '暂无收藏' in body_text, '取消收藏后房源仍在列表')
 
 
+def tc_fav_009():
+    """收藏列表点击进入详情（应跳转 /apartments/{apartment_id}，非收藏记录ID）"""
+    # 接口层：拿到收藏记录 id 与 apartment_id，校验前端跳转用的是 apartment_id
+    favs = api('/favorites/my/', body={'page': 1, 'page_size': 10}, token=STATE['tenant_token'])
+    items = favs.get('items', [])
+    expect(items, '无收藏记录，无法测试点击进详情')
+    fav = items[0]
+    apt_id = fav.get('apartment_id')
+    new_context(storage_state=auth_state(STATE['tenant_token'], STATE['tenant_user']))
+    PAGE.goto(f'{BASE_URL}/profile/favorites')
+    PAGE.wait_for_timeout(2500)
+    # 点击第一张收藏卡片（点击区域避开取消收藏按钮）
+    card = PAGE.query_selector('xpath=(//div[contains(@class,"rounded-xl")][.//text()[contains(.,"/月起")]])[1]')
+    if not card:
+        card = PAGE.query_selector('text=/月起')
+    expect(card is not None, '未找到收藏卡片')
+    card.click()
+    PAGE.wait_for_timeout(2500)
+    shot('TC-FAV-009_detail')
+    expect(f'/apartments/{apt_id}' in PAGE.url,
+           f'点击收藏卡片跳转错误：期望 /apartments/{apt_id}（房源ID），实际 {PAGE.url}（可能误用收藏记录ID）')
+    body_text = PAGE.inner_text('body')
+    expect('房源不存在' not in body_text and '未上架' not in body_text,
+           f'点击收藏卡片后报「房源不存在或未上架」（跳转用了错误ID）: {PAGE.url}')
+
+
+def tc_fav_011():
+    """收藏列表-已删除/未上架房源不应展示（需求待澄清，当前标记文档缺口）"""
+    # 准备：租客收藏一套房源，然后商家删除它
+    favs = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
+    items = favs.get('items', [])
+    if not items:
+        raise SkipCase('无收藏记录')
+    apt_id = items[0].get('apartment_id')
+    # 商家删除该房源（若属于当前商家）
+    status, code, _ = api_status(f'/merchant/apartments/{apt_id}/', 'DELETE', token=STATE['merchant_token'])
+    if status not in (200, 204):
+        raise SkipCase(f'该房源不属当前商家，无法删除（status={status}）')
+    # 校验收藏列表是否仍返回已删除房源
+    favs2 = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
+    still = [it for it in favs2.get('items', []) if it.get('apartment_id') == apt_id]
+    expect(len(still) == 0,
+           '已删除房源仍显示在我的收藏列表（后端未按房源状态/删除标记过滤）；注：需求对此场景未明确，见 YUZ-200')
+
+
 # ---------- 四、消息模块 ----------
 def tc_msg_005():
     """消息列表空状态"""
@@ -1262,6 +1307,8 @@ CASES = [
     ('TC-FAV-006', '我的收藏列表', '收藏', 'P0', tc_fav_006),
     ('TC-FAV-007', '收藏列表空状态', '收藏', 'P1', tc_fav_007),
     ('TC-FAV-008', '从收藏列表取消收藏', '收藏', 'P0', tc_fav_008),
+    ('TC-FAV-009', '收藏列表点击进入详情', '收藏', 'P1', tc_fav_009),
+    ('TC-FAV-011', '收藏列表-已删除房源不应展示', '收藏', 'P1', tc_fav_011),
     # 消息
     ('TC-MSG-005', '消息列表空状态', '消息', 'P1', tc_msg_005),
     ('TC-MSG-006', '未登录访问消息', '消息', 'P1', tc_msg_006),

@@ -1,8 +1,8 @@
 {
-  "stamp": "20260731_134623",
-  "total": 47,
+  "stamp": "20260731_152521",
+  "total": 49,
   "passed": 44,
-  "failed": 3,
+  "failed": 5,
   "skipped": 0,
   "results": [
     {
@@ -23,7 +23,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 0.9
+      "duration": 0.8
     },
     {
       "id": "TC-AUTH-009",
@@ -63,7 +63,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.7
     },
     {
       "id": "TC-AUTH-016",
@@ -83,7 +83,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.6
+      "duration": 3.5
     },
     {
       "id": "TC-AUTH-018",
@@ -93,7 +93,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 6.7
+      "duration": 6.6
     },
     {
       "id": "TC-AUTH-022",
@@ -143,7 +143,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.7
+      "duration": 2.8
     },
     {
       "id": "TC-APT-014",
@@ -193,7 +193,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 6.1
+      "duration": 6.0
     },
     {
       "id": "TC-APT-020",
@@ -223,7 +223,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-FAV-007",
@@ -245,7 +245,29 @@
       "shots": [
         "FAIL_TC-FAV-008.png"
       ],
-      "duration": 5.6
+      "duration": 5.5
+    },
+    {
+      "id": "TC-FAV-009",
+      "title": "收藏列表点击进入详情",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 点击收藏卡片跳转错误：期望 /apartments/2（房源ID），实际 http://localhost:5174/apartments/1（可能误用收藏记录ID）",
+      "shots": [
+        "FAIL_TC-FAV-009.png"
+      ],
+      "duration": 5.4
+    },
+    {
+      "id": "TC-FAV-011",
+      "title": "收藏列表-已删除房源不应展示",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 已删除房源仍显示在我的收藏列表（后端未按房源状态/删除标记过滤）；注：需求对此场景未明确，见 YUZ-200",
+      "shots": [],
+      "duration": 0.1
     },
     {
       "id": "TC-MSG-005",
@@ -255,7 +277,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-MSG-006",
@@ -285,7 +307,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 7.9
+      "duration": 8.0
     },
     {
       "id": "TC-AUD-005",
@@ -295,7 +317,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 8.1
+      "duration": 8.2
     },
     {
       "id": "TC-AUD-007",
@@ -315,7 +337,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.0
+      "duration": 3.1
     },
     {
       "id": "TC-MER-008",
@@ -347,7 +369,7 @@
       "shots": [
         "FAIL_TC-MER-057.png"
       ],
-      "duration": 5.7
+      "duration": 5.6
     },
     {
       "id": "TC-MER-064",
@@ -357,7 +379,7 @@
       "status": "fail",
       "note": "AssertionError: 审核中列表包含 approved 记录（不应展示已通过审核单），实际状态集=['approved', 'pending', 'rejected']",
       "shots": [],
-      "duration": 1.3
+      "duration": 1.1
     },
     {
       "id": "TC-MER-068",
@@ -377,7 +399,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.5
+      "duration": 2.3
     },
     {
       "id": "TC-UI-002",
@@ -417,7 +439,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.0
+      "duration": 2.8
     },
     {
       "id": "TC-UI-007",
@@ -427,7 +449,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-UI-009",
@@ -437,7 +459,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 5.8
+      "duration": 5.7
     },
     {
       "id": "TC-UI-010",
@@ -457,7 +479,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.2
+      "duration": 4.1
     },
     {
       "id": "TC-SEC-002",
