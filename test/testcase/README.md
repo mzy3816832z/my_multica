@@ -265,7 +265,7 @@
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
 | TC-MER-056 | 已上架房源列表 | 商家房源 | P0 | 商家已登录，有published房源 | 1. 进入个人中心<br>2. 点击「已上架房源」 | 1. GET `/api/v1/merchant/apartments` 返回 `code=0`<br>2. `data.items` 中所有房源 `status="published"`<br>3. 按 `updated_at` 倒序排列 | 功能测试 | PRD 7.5 |
-| TC-MER-057 | 审核中列表-只展示pending状态 | 商家房源 | P0 | 商家有多个状态审核记录（pending、approved、rejected） | 1. 切换至「审核中」Tab | 1. GET `/api/v1/merchant/audits` 返回 `code=0`<br>2. `data.items` 中**所有记录 `status="pending"`**<br>3. **不包含** `status="approved"` 或 `status="rejected"` 的记录<br>4. 按 `status_order` + `created_at` 排序（pending 在前） | 功能测试 | PRD 7.5 |
+| TC-MER-057 | 审核中列表-展示pending和rejected状态 | 商家房源 | P0 | 商家有多个状态审核记录（pending、approved、rejected） | 1. 切换至「审核中」Tab | 1. GET `/api/v1/merchant/audits` 返回 `code=0`<br>2. `data.items` 中**所有记录 `status` 为 `"pending"` 或 `"rejected"`**<br>3. **不包含** `status="approved"` 的记录<br>4. 按 `status_order` + `created_at` 排序（pending 在前，rejected 在后） | 功能测试 | PRD 7.5 |
 | TC-MER-058 | 编辑房源-非关键字段直接更新 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 点击房源卡片进入编辑<br>2. 修改描述字段为「新描述」<br>3. 提交 | 1. PUT `/api/v1/merchant/apartments/1` 返回 `code=0`<br>2. `data.updated=true`<br>3. `data.audit_id=null`<br>4. 无审核单生成 | 功能测试 | PRD 7.6 |
 | TC-MER-059 | 编辑房源-修改名称触发变更审核 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 进入编辑页<br>2. 修改公寓名称为「新名称」<br>3. 提交 | 1. 返回 `code=0`<br>2. `data.updated=false`<br>3. `data.audit_id` 为新生成的变更审核ID（正整数）<br>4. 原房源保持 `published` | 功能测试 | PRD 7.6 |
 | TC-MER-060 | 编辑房源-修改位置触发变更审核 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 修改行政区或街道或门牌号<br>2. 提交 | 生成变更审核单，`data.updated=false`，原房源保持不变 | 功能测试 | PRD 7.6 |
@@ -273,7 +273,7 @@
 | TC-MER-062 | 删除房源-已处理审核单保留 | 商家房源 | P1 | 有已上架房源，存在approved变更审核单 | 1. 删除该房源 | 1. 房源软删除<br>2. approved/rejected 状态的审核单**保留**，`deleted_at` 仍为 null | 功能测试 | PRD 7.5 |
 | TC-MER-063 | 审核中列表-不展示已删除房源的审核单 | 商家房源 | P1 | 某房源已删除，但其审核单未被同步软删除 | 1. 进入「审核中」Tab | `data.items` 中**不包含**已删除房源（`apartment.deleted_at != null`）关联的审核单 | 功能测试 | PRD 7.5 |
 | TC-MER-064 | 审核中列表-不展示已通过审核单 | 商家房源 | P1 | 商家有approved状态的首次审核记录 | 1. 进入「审核中」Tab | `data.items` 中**不包含** `status="approved"` 的记录 | 功能测试 | PRD 7.5 |
-| TC-MER-068 | 审核中列表-不展示已驳回审核单 | 商家房源 | P1 | 商家有rejected状态的变更审核记录 | 1. 进入「审核中」Tab | `data.items` 中**不包含** `status="rejected"` 的记录 | 功能测试 | PRD 7.5 |
+| TC-MER-068 | 审核中列表-展示已驳回审核单 | 商家房源 | P1 | 商家有rejected状态的变更审核记录 | 1. 进入「审核中」Tab | `data.items` 中**包含** `status="rejected"` 的记录，商家可点击该审核单查看驳回原因并重新编辑提交 | 功能测试 | PRD 7.5 |
 | TC-MER-069 | 编辑他人房源 | 商家房源 | P1 | 商家A登录 | PUT `/api/v1/merchant/apartments/{B的房源ID}` | 返回 `code=404001`，提示「房源不存在」 | 接口测试 | PRD 7.6 |
 | TC-MER-070 | 非商家访问发布页 | 商家房源 | P0 | 租客登录 | 1. 直接访问 `/profile/apartments/create` | 路由守卫拦截，提示「暂无权限访问该页面」，跳转 `/apartments` | 功能测试 | PRD 3.5 |
 
