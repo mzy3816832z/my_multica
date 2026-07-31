@@ -4,6 +4,24 @@
 from rest_framework import serializers
 
 from core.fields import TimestampField
+from apps.dicts.models import SystemDict
+
+
+# ============================================================
+# 字典 label 缓存辅助
+# ============================================================
+
+def get_dict_label(category: str, code: str) -> str:
+    """从系统字典表中查询指定 category + code 的 label，找不到则返回原 code。"""
+    if not code:
+        return code
+    try:
+        return SystemDict.objects.get(
+            category=category, code=code, is_active=True, deleted_at__isnull=True
+        ).label
+    except SystemDict.DoesNotExist:
+        return code
+
 
 # ============================================================
 # 枚举常量定义
@@ -299,8 +317,16 @@ class RentalPlanListSerializer(serializers.Serializer):
     """租期租金方案列表展示序列化器"""
     id = serializers.IntegerField(help_text='租金方案 ID')
     lease_term = serializers.CharField(max_length=30, help_text='租期编码')
+    lease_term_label = serializers.SerializerMethodField(help_text='租期展示标签')
     monthly_rent = serializers.IntegerField(help_text='月租金（元）')
     payment_method = serializers.CharField(max_length=30, help_text='支付方式编码')
+    payment_method_label = serializers.SerializerMethodField(help_text='支付方式展示标签')
+
+    def get_lease_term_label(self, obj):
+        return get_dict_label('lease_term', obj.lease_term)
+
+    def get_payment_method_label(self, obj):
+        return get_dict_label('payment_method', obj.payment_method)
 
 
 class RoomTypeListSerializer(serializers.Serializer):
@@ -316,10 +342,18 @@ class RoomTypeListSerializer(serializers.Serializer):
         help_text='设施编码数组',
     )
     layout_type = serializers.CharField(max_length=30, help_text='户型编码')
+    layout_type_label = serializers.SerializerMethodField(help_text='户型展示标签')
     window_type = serializers.CharField(max_length=30, help_text='内外窗编码')
+    window_type_label = serializers.SerializerMethodField(help_text='内外窗展示标签')
     floor = serializers.IntegerField(help_text='楼层')
     sort = serializers.IntegerField(help_text='展示排序')
     min_monthly_rent = serializers.SerializerMethodField(help_text='该房型最低月租金')
+
+    def get_layout_type_label(self, obj):
+        return get_dict_label('layout_type', obj.layout_type)
+
+    def get_window_type_label(self, obj):
+        return get_dict_label('window_type', obj.window_type)
 
     def get_min_monthly_rent(self, obj):
         """计算该房型最低月租金"""
@@ -340,11 +374,19 @@ class RoomTypeDetailSerializer(serializers.Serializer):
         help_text='设施编码数组',
     )
     layout_type = serializers.CharField(max_length=30, help_text='户型编码')
+    layout_type_label = serializers.SerializerMethodField(help_text='户型展示标签')
     window_type = serializers.CharField(max_length=30, help_text='内外窗编码')
+    window_type_label = serializers.SerializerMethodField(help_text='内外窗展示标签')
     floor = serializers.IntegerField(help_text='楼层')
     sort = serializers.IntegerField(help_text='展示排序')
     rental_plans = RentalPlanListSerializer(many=True, help_text='租期租金方案列表')
     apartment = serializers.SerializerMethodField(help_text='所属公寓简要信息')
+
+    def get_layout_type_label(self, obj):
+        return get_dict_label('layout_type', obj.layout_type)
+
+    def get_window_type_label(self, obj):
+        return get_dict_label('window_type', obj.window_type)
 
     def get_apartment(self, obj):
         """返回所属公寓简要信息"""
