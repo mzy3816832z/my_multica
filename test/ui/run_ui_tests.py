@@ -679,17 +679,13 @@ def tc_apt_020():
     apt_id = lst['items'][0]['id']
     PAGE.goto(f'{BASE_URL}/apartments/{apt_id}')
     PAGE.wait_for_timeout(2500)
-    room = PAGE.query_selector('text=温馨一居室')
-    expect(room is not None, '未找到房型卡片')
-    # 点击可点击的卡片容器（文本节点本身可能不接收点击）
-    room.click()
+    # 直接点击包含房型名的可点击卡片容器（带 @click 的 div）
+    card = PAGE.query_selector('xpath=//div[@class and contains(@class,"rounded-xl")][.//*[normalize-space()="温馨一居室"]]')
+    if not card:
+        card = PAGE.query_selector('text=温馨一居室')
+    expect(card is not None, '未找到房型卡片')
+    card.click()
     PAGE.wait_for_timeout(3000)
-    if '/room-types/' not in PAGE.url:
-        # 备用：直接点击卡片根元素
-        card = PAGE.query_selector('[class*=room][class*=card], [class*=room-type], [class*=RoomCard]')
-        if card:
-            card.click()
-            PAGE.wait_for_timeout(3000)
     shot('TC-APT-020_room_type')
     expect('/room-types/' in PAGE.url, f'未跳转户型详情: {PAGE.url}')
 
