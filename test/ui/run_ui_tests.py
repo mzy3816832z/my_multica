@@ -927,6 +927,87 @@ def tc_mer_009():
     expect('浦东张江阳光公寓' in body_text or '上架' in body_text, '已上架房源列表为空')
 
 
+def _setup_merchant_audit_records():
+    """为商家准备 3 种状态的审核记录：pending / approved / rejected。
+    返回商家 token。独立注册一个商家，避免影响其他用例。"""
+    ts = int(time.time()) % 100000000
+    mp = f'137{ts:08d}'
+    register_user(mp)
+    tk, _ = login_token(mp, 'Test123456')
+    select_role(tk, 'landlord')
+    tk, user = login_token(mp, 'Test123456')
+    admin_tk = STATE['admin_token']
+    # 3 套房源：1 通过、1 驳回、1 待审核
+    a_approve = create_apartment(tk, '审批通过房源X')
+    a_reject = create_apartment(tk, '审批驳回房源X')
+    create_apartment(tk, '审批中房源X')  # 保持 pending
+    # 通过 a_approve
+    data = api('/admin/audits/', body={'type': 'first_review', 'status': 'pending', 'page': 1, 'page_size': 100}, token=admin_tk)
+    for it in data.get('items', []):
+        if it.get('apartment_id') == (a_approve.get('apartment_id') or a_approve.get('id')):
+            api(f"/admin/audits/{it['id']}/approve/", 'POST', {}, token=admin_tk)
+    # 驳回 a_reject
+    data = api('/admin/audits/', body={'type': 'first_review', 'status': 'pending', 'page': 1, 'page_size': 100}, token=admin_tk)
+    for it in data.get('items', []):
+        if it.get('apartment_id') == (a_reject.get('apartment_id') or a_reject.get('id')):
+            api(f"/admin/audits/{it['id']}/reject/", 'POST', {'reject_reason': '测试驳回原因'}, token=admin_tk)
+    return tk, user
+
+
+def tc_mer_057():
+    """审核中列表-展示pending和rejected，不包含approved（接口+前端双重校验）"""
+    tk, user = _setup_merchant_audit_records()
+    # 接口层校验
+    data = api('/merchant/audits/', body={'page': 1, 'page_size': 100}, token=tk)
+    statuses = [it.get('status') for it in data.get('items', [])]
+    sa = SoftAssert()
+    sa.check('pending' in statuses, '审核中接口未返回 pending 记录')
+    sa.check('rejected' in statuses, '审核中接口未返回 rejected 记录')
+    sa.check('approved' not in statuses,
+             f'审核中接口错误返回了 approved 记录（应只含 pending/rejected），实际状态集={sorted(set(statuses))}')
+    # 前端层校验
+    new_context(storage_state=auth_state(tk, user))
+    PAGE.goto(f'{BASE_URL}/profile/my-apartments')
+    PAGE.wait_for_timeout(2000)
+    tab = PAGE.query_selector('text=审核中')
+    if tab:
+        tab.click()
+        PAGE.wait_for_timeout(2000)
+    shot('TC-MER-057_audit_tab')
+    body_text = PAGE.inner_text('body')
+    sa.check('审批通过房源X' not in body_text, '前端审核中Tab错误展示了已通过(approved)的房源')
+    sa.assert_all()
+
+
+def tc_mer_064():
+    """审核中列表-不展示已通过审核单"""
+    tk, user = _setup_merchant_audit_records()
+    data = api('/merchant/audits/', body={'page': 1, 'page_size': 100}, token=tk)
+    statuses = [it.get('status') for it in data.get('items', [])]
+    expect('approved' not in statuses,
+           f'审核中列表包含 approved 记录（不应展示已通过审核单），实际状态集={sorted(set(statuses))}')
+
+
+def tc_mer_068():
+    """审核中列表-展示已驳回审核单（含驳回原因）"""
+    tk, user = _setup_merchant_audit_records()
+    data = api('/merchant/audits/', body={'page': 1, 'page_size': 100}, token=tk)
+    rejected = [it for it in data.get('items', []) if it.get('status') == 'rejected']
+    expect(len(rejected) > 0, '审核中列表未展示已驳回(rejected)审核单')
+    # 前端展示驳回记录
+    new_context(storage_state=auth_state(tk, user))
+    PAGE.goto(f'{BASE_URL}/profile/my-apartments')
+    PAGE.wait_for_timeout(2000)
+    tab = PAGE.query_selector('text=审核中')
+    if tab:
+        tab.click()
+        PAGE.wait_for_timeout(2000)
+    shot('TC-MER-068_rejected_shown')
+    body_text = PAGE.inner_text('body')
+    expect('审批驳回房源X' in body_text or '已驳回' in body_text or '驳回' in body_text,
+           '前端审核中Tab未展示已驳回审核单')
+
+
 # ---------- 七、前端页面/UI ----------
 def tc_ui_001():
     """路由守卫-未登录拦截"""
@@ -1193,6 +1274,9 @@ CASES = [
     ('TC-MER-001', '发布房源-正常流程', '商家房源', 'P0', tc_mer_001),
     ('TC-MER-008', '非商家访问发布页', '商家房源', 'P0', tc_mer_008),
     ('TC-MER-009', '已上架房源列表', '商家房源', 'P0', tc_mer_009),
+    ('TC-MER-057', '审核中列表-展示pending和rejected不含approved', '商家房源', 'P0', tc_mer_057),
+    ('TC-MER-064', '审核中列表-不展示已通过审核单', '商家房源', 'P1', tc_mer_064),
+    ('TC-MER-068', '审核中列表-展示已驳回审核单', '商家房源', 'P1', tc_mer_068),
     # 前端 UI
     ('TC-UI-001', '路由守卫-未登录拦截', '前端-路由', 'P0', tc_ui_001),
     ('TC-UI-002', '路由守卫-角色权限校验', '前端-路由', 'P0', tc_ui_002),
