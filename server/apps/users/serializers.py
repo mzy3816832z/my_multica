@@ -1,12 +1,17 @@
 """
 用户认证相关序列化器
 """
+import re
 from rest_framework import serializers
+
+
+PHONE_REGEX = re.compile(r'^1[3-9]\d{9}$')
+PHONE_ERROR_MESSAGE = '手机号格式不正确'
 
 
 class RegisterSerializer(serializers.Serializer):
     """注册请求序列化器"""
-    phone = serializers.CharField(max_length=11, min_length=11, help_text='手机号，11位数字')
+    phone = serializers.RegexField(PHONE_REGEX, max_length=11, min_length=11, help_text='手机号，11位数字')
     sms_code = serializers.CharField(max_length=6, min_length=6, help_text='短信验证码')
     password = serializers.CharField(max_length=128, min_length=6, help_text='密码，至少6位')
 
@@ -19,7 +24,7 @@ class LoginByPasswordSerializer(serializers.Serializer):
 
 class LoginByCodeSerializer(serializers.Serializer):
     """手机号+验证码登录请求序列化器"""
-    phone = serializers.CharField(max_length=11, min_length=11, help_text='手机号，11位数字')
+    phone = serializers.RegexField(PHONE_REGEX, max_length=11, min_length=11, help_text='手机号，11位数字')
     sms_code = serializers.CharField(max_length=6, min_length=6, help_text='短信验证码')
 
 
@@ -33,7 +38,7 @@ class SelectRoleSerializer(serializers.Serializer):
 
 class ResetPasswordSerializer(serializers.Serializer):
     """忘记密码重置请求序列化器"""
-    phone = serializers.CharField(max_length=11, min_length=11, help_text='手机号')
+    phone = serializers.RegexField(PHONE_REGEX, max_length=11, min_length=11, help_text='手机号')
     sms_code = serializers.CharField(max_length=6, min_length=6, help_text='短信验证码')
     new_password = serializers.CharField(max_length=128, min_length=6, help_text='新密码，至少6位')
 
