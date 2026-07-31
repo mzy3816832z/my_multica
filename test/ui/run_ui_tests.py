@@ -790,14 +790,22 @@ def tc_fav_008():
     expect('徐汇滨江雅苑' not in body_text or '暂无收藏' in body_text, '取消收藏后房源仍在列表')
 
 
+def _ensure_tenant_favorite():
+    """确保租客有收藏记录（用例独立性：自行准备，不依赖其他用例）。返回 apartment_id。"""
+    favs = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
+    items = favs.get('items', [])
+    if items:
+        return items[0].get('apartment_id')
+    # 没有则新收藏一套已上架房源
+    lst = api('/apartments/', body={'page': 1, 'page_size': 1}, token=STATE['tenant_token'])
+    apt_id = lst['items'][0]['id']
+    api('/favorites/', 'POST', {'apartment_id': apt_id}, token=STATE['tenant_token'])
+    return apt_id
+
+
 def tc_fav_009():
     """收藏列表点击进入详情（应跳转 /apartments/{apartment_id}，非收藏记录ID）"""
-    # 接口层：拿到收藏记录 id 与 apartment_id，校验前端跳转用的是 apartment_id
-    favs = api('/favorites/my/', body={'page': 1, 'page_size': 10}, token=STATE['tenant_token'])
-    items = favs.get('items', [])
-    expect(items, '无收藏记录，无法测试点击进详情')
-    fav = items[0]
-    apt_id = fav.get('apartment_id')
+    apt_id = _ensure_tenant_favorite()
     new_context(storage_state=auth_state(STATE['tenant_token'], STATE['tenant_user']))
     PAGE.goto(f'{BASE_URL}/profile/favorites')
     PAGE.wait_for_timeout(2500)
@@ -818,13 +826,11 @@ def tc_fav_009():
 
 def tc_fav_011():
     """收藏列表-已删除/未上架房源不应展示（需求待澄清，当前标记文档缺口）"""
-    # 准备：租客收藏一套房源，然后商家删除它
-    favs = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
-    items = favs.get('items', [])
-    if not items:
-        raise SkipCase('无收藏记录')
-    apt_id = items[0].get('apartment_id')
-    # 商家删除该房源（若属于当前商家）
+    # 用例独立性：自行让租客收藏一套当前商家的房源
+    lst = api('/apartments/', body={'page': 1, 'page_size': 1, 'keyword': '浦东'}, token=STATE['tenant_token'])
+    apt_id = lst['items'][0]['id']
+    api('/favorites/', 'POST', {'apartment_id': apt_id}, token=STATE['tenant_token'])
+    # 商家删除该房源
     status, code, _ = api_status(f'/merchant/apartments/{apt_id}/', 'DELETE', token=STATE['merchant_token'])
     if status not in (200, 204):
         raise SkipCase(f'该房源不属当前商家，无法删除（status={status}）')

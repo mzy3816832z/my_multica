@@ -1,8 +1,8 @@
 {
-  "stamp": "20260731_152521",
+  "stamp": "20260731_161027",
   "total": 49,
-  "passed": 44,
-  "failed": 5,
+  "passed": 48,
+  "failed": 1,
   "skipped": 0,
   "results": [
     {
@@ -13,7 +13,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.6
+      "duration": 4.2
     },
     {
       "id": "TC-AUTH-002",
@@ -33,7 +33,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.1
+      "duration": 2.2
     },
     {
       "id": "TC-AUTH-010",
@@ -63,7 +63,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.7
+      "duration": 2.8
     },
     {
       "id": "TC-AUTH-016",
@@ -93,7 +93,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 6.6
+      "duration": 6.7
     },
     {
       "id": "TC-AUTH-022",
@@ -103,7 +103,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.3
+      "duration": 4.5
     },
     {
       "id": "TC-APT-001",
@@ -153,7 +153,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 3.0
     },
     {
       "id": "TC-APT-015",
@@ -183,7 +183,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 5.4
+      "duration": 5.5
     },
     {
       "id": "TC-APT-018",
@@ -193,7 +193,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 6.0
+      "duration": 6.3
     },
     {
       "id": "TC-APT-020",
@@ -223,7 +223,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-FAV-007",
@@ -233,18 +233,16 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.7
+      "duration": 3.6
     },
     {
       "id": "TC-FAV-008",
       "title": "从收藏列表取消收藏",
       "module": "收藏",
       "priority": "P0",
-      "status": "fail",
-      "note": "AssertionError: 取消收藏后房源仍在列表 | 控制台错误: Failed to load resource: the server responded with a status of 404 (Not Found)",
-      "shots": [
-        "FAIL_TC-FAV-008.png"
-      ],
+      "status": "pass",
+      "note": "",
+      "shots": [],
       "duration": 5.5
     },
     {
@@ -252,12 +250,10 @@
       "title": "收藏列表点击进入详情",
       "module": "收藏",
       "priority": "P1",
-      "status": "fail",
-      "note": "AssertionError: 点击收藏卡片跳转错误：期望 /apartments/2（房源ID），实际 http://localhost:5174/apartments/1（可能误用收藏记录ID）",
-      "shots": [
-        "FAIL_TC-FAV-009.png"
-      ],
-      "duration": 5.4
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.5
     },
     {
       "id": "TC-FAV-011",
@@ -277,7 +273,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-MSG-006",
@@ -297,7 +293,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.0
+      "duration": 2.9
     },
     {
       "id": "TC-AUD-004",
@@ -307,7 +303,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 8.0
+      "duration": 7.9
     },
     {
       "id": "TC-AUD-005",
@@ -327,7 +323,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 3.0
     },
     {
       "id": "TC-MER-001",
@@ -364,20 +360,18 @@
       "title": "审核中列表-展示pending和rejected不含approved",
       "module": "商家房源",
       "priority": "P0",
-      "status": "fail",
-      "note": "AssertionError: 审核中接口错误返回了 approved 记录（应只含 pending/rejected），实际状态集=['approved', 'pending', 'rejected']；前端审核中Tab错误展示了已通过(approved)的房源",
-      "shots": [
-        "FAIL_TC-MER-057.png"
-      ],
-      "duration": 5.6
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.4
     },
     {
       "id": "TC-MER-064",
       "title": "审核中列表-不展示已通过审核单",
       "module": "商家房源",
       "priority": "P1",
-      "status": "fail",
-      "note": "AssertionError: 审核中列表包含 approved 记录（不应展示已通过审核单），实际状态集=['approved', 'pending', 'rejected']",
+      "status": "pass",
+      "note": "",
       "shots": [],
       "duration": 1.1
     },
@@ -399,7 +393,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.3
+      "duration": 2.2
     },
     {
       "id": "TC-UI-002",
@@ -419,7 +413,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.2
+      "duration": 2.3
     },
     {
       "id": "TC-UI-005",
@@ -439,7 +433,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-UI-007",
@@ -449,7 +443,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-UI-009",
@@ -459,7 +453,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 5.7
+      "duration": 5.8
     },
     {
       "id": "TC-UI-010",
@@ -479,7 +473,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.1
+      "duration": 4.2
     },
     {
       "id": "TC-SEC-002",
