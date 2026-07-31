@@ -1,7 +1,7 @@
 import request from '@/utils/request'
-import type { PaginatedData, Apartment } from '@/types'
+import type { PaginatedData, FavoriteItem } from '@/types'
 
-export function getFavorites(params?: { page?: number; page_size?: number }): Promise<PaginatedData<Apartment>> {
+export function getFavorites(params?: { page?: number; page_size?: number }): Promise<PaginatedData<FavoriteItem>> {
   return request.get('/favorites/my/', { params })
 }
 
