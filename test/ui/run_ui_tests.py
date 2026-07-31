@@ -257,6 +257,27 @@ def expect(cond, msg):
         raise AssertionError(msg)
 
 
+class SoftAssert:
+    """软断言：收集一个用例内的所有断言失败，最后一次性抛出，
+    避免多字段页面只报告第一个问题而遗漏其余问题。"""
+    def __init__(self):
+        self.errors = []
+
+    def check(self, cond, msg):
+        if not cond:
+            self.errors.append(msg)
+
+    def check_no_bad_text(self, body_text, bad_list, where='页面'):
+        """检查页面不得出现任何异常文本，返回所有命中的项"""
+        for bad in bad_list:
+            if bad in body_text:
+                self.errors.append(f'{where}出现异常文本「{bad}」')
+
+    def assert_all(self):
+        if self.errors:
+            raise AssertionError('；'.join(self.errors))
+
+
 def expect_toast(text_kw, timeout=6000):
     """等待 vant toast 出现并包含关键字"""
     toast = PAGE.wait_for_selector('.van-toast', timeout=timeout)
@@ -637,12 +658,18 @@ def tc_apt_017():
     shot('TC-APT-017_detail')
     expect('/apartments/' in PAGE.url, f'未进入详情页: {PAGE.url}')
     body_text = PAGE.inner_text('body')
-    expect('浦东张江阳光公寓' in body_text, '详情页未展示房源名称')
-    expect('温馨一居室' in body_text or '房型' in body_text, '详情页未展示房型信息')
-    # 断言规则：不得出现原始编码 / 占位符 / 未处理空值
-    for bad in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer',
-                'undefined', 'null', 'None', 'NaN', '[object Object]', '¥?'):
-        expect(bad not in body_text, f'房源详情页出现异常文本「{bad}」（字段未翻译或占位符未处理）')
+    sa = SoftAssert()
+    sa.check('浦东张江阳光公寓' in body_text, '详情页未展示房源名称')
+    sa.check('温馨一居室' in body_text or '房型' in body_text, '详情页未展示房型信息')
+    # 断言规则：不得出现原始编码 / 占位符 / 未处理空值（收集全部问题，不只第一个）
+    sa.check_no_bad_text(body_text,
+                         ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'),
+                         '房源详情页(字段未翻译为中文标签)')
+    sa.check_no_bad_text(body_text, ('¥?',),
+                         '房源详情页(价格占位符未处理)')
+    sa.check_no_bad_text(body_text, ('undefined', 'null', 'None', 'NaN', '[object Object]'),
+                         '房源详情页(空值未处理)')
+    sa.assert_all()
 
 
 def tc_apt_018():
@@ -703,14 +730,16 @@ def tc_apt_023():
     PAGE.wait_for_timeout(2500)
     shot('TC-APT-023_room_detail')
     body_text = PAGE.inner_text('body')
-    expect('温馨一居室' in body_text, '户型详情未展示名称')
-    # 严格校验：户型/内外窗必须显示中文标签，不得显示原始编码
-    for raw_code in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'):
-        expect(raw_code not in body_text,
-               f'户型/内外窗未翻译为中文标签，页面直接显示原始编码「{raw_code}」（后端未返回 *_label 字段）')
+    sa = SoftAssert()
+    sa.check('温馨一居室' in body_text, '户型详情未展示名称')
+    # 户型/内外窗必须显示中文标签，不得显示原始编码（收集全部问题）
+    sa.check_no_bad_text(body_text,
+                         ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'),
+                         '户型详情页(字段未翻译为中文标签)')
     # 租金必须显示真实数值，不得出现 ¥? 占位
-    expect('¥?' not in body_text and '? /月' not in body_text, '租金显示为占位符「¥?」，未展示真实月租金')
-    expect('租期租金方案' in body_text or '租' in body_text, '户型详情未展示租金方案')
+    sa.check_no_bad_text(body_text, ('¥?', '? /月'), '户型详情页(租金占位符未处理)')
+    sa.check('租期租金方案' in body_text or '租' in body_text, '户型详情未展示租金方案')
+    sa.assert_all()
 
 
 # ---------- 三、收藏模块 ----------

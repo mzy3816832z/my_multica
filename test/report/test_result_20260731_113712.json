@@ -1,8 +1,8 @@
 {
-  "stamp": "20260731_103125",
+  "stamp": "20260731_113712",
   "total": 44,
-  "passed": 42,
-  "failed": 2,
+  "passed": 43,
+  "failed": 1,
   "skipped": 0,
   "results": [
     {
@@ -13,7 +13,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.6
+      "duration": 4.9
     },
     {
       "id": "TC-AUTH-002",
@@ -23,7 +23,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 0.8
+      "duration": 0.9
     },
     {
       "id": "TC-AUTH-009",
@@ -33,7 +33,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.1
+      "duration": 2.3
     },
     {
       "id": "TC-AUTH-010",
@@ -73,7 +73,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.3
+      "duration": 3.2
     },
     {
       "id": "TC-AUTH-017",
@@ -83,7 +83,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.4
+      "duration": 4.0
     },
     {
       "id": "TC-AUTH-018",
@@ -93,7 +93,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 6.6
+      "duration": 6.9
     },
     {
       "id": "TC-AUTH-022",
@@ -113,7 +113,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.7
+      "duration": 2.8
     },
     {
       "id": "TC-APT-004",
@@ -133,7 +133,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 5.0
+      "duration": 4.9
     },
     {
       "id": "TC-APT-013",
@@ -180,12 +180,10 @@
       "title": "房源详情-正常展示",
       "module": "房源-详情",
       "priority": "P0",
-      "status": "fail",
-      "note": "AssertionError: 房源详情页出现异常文本「¥?」（字段未翻译或占位符未处理）",
-      "shots": [
-        "FAIL_TC-APT-017.png"
-      ],
-      "duration": 5.5
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.4
     },
     {
       "id": "TC-APT-018",
@@ -195,7 +193,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 6.0
+      "duration": 6.1
     },
     {
       "id": "TC-APT-020",
@@ -225,7 +223,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-FAV-007",
@@ -247,7 +245,7 @@
       "shots": [
         "FAIL_TC-FAV-008.png"
       ],
-      "duration": 5.5
+      "duration": 5.4
     },
     {
       "id": "TC-MSG-005",
@@ -257,7 +255,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-MSG-006",
@@ -267,7 +265,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.2
+      "duration": 2.3
     },
     {
       "id": "TC-AUD-001",
@@ -287,7 +285,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 7.8
+      "duration": 7.9
     },
     {
       "id": "TC-AUD-005",
@@ -327,7 +325,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.0
+      "duration": 2.9
     },
     {
       "id": "TC-MER-009",
@@ -337,7 +335,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-UI-001",
@@ -347,7 +345,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.2
+      "duration": 2.3
     },
     {
       "id": "TC-UI-002",
@@ -367,7 +365,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.2
+      "duration": 2.3
     },
     {
       "id": "TC-UI-005",
@@ -377,7 +375,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-UI-006",
@@ -387,7 +385,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-UI-007",
