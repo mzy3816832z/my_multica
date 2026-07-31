@@ -4,13 +4,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { getFavorites, removeFavorite } from '@/api/favorite'
-import type { Apartment } from '@/types'
+import type { FavoriteItem } from '@/types'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
-const list = ref<Apartment[]>([])
+const list = ref<FavoriteItem[]>([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -103,7 +103,7 @@ onMounted(() => {
                 :src="item.cover_image"
                 fit="cover"
                 class="w-full h-full"
-                :alt="item.name"
+                :alt="item.apartment_name"
               />
               <div class="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
                 ¥{{ item.min_monthly_rent || '?' }}/月起
@@ -111,7 +111,7 @@ onMounted(() => {
             </div>
             <!-- 信息区 -->
             <div class="p-3">
-              <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.name }}</h3>
+              <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.apartment_name }}</h3>
               <p class="text-sm text-gray-500 mt-1 flex items-center">
                 <van-icon name="location-o" class="mr-1" />
                 {{ item.district_name || '' }} {{ item.street_name || '' }}

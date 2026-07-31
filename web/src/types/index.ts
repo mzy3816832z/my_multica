@@ -5,6 +5,18 @@ export interface ApiResponse<T = unknown> {
   data: T
 }
 
+// 收藏列表项
+export interface FavoriteItem {
+  id: number
+  apartment_id: number
+  apartment_name: string
+  cover_image: string
+  district_name: string
+  street_name: string
+  min_monthly_rent: number | null
+  created_at: number
+}
+
 // 分页结构
 export interface PaginatedData<T> {
   items: T[]
