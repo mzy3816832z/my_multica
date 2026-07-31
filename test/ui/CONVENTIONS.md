@@ -69,5 +69,25 @@ expect('redirect' in PAGE.url)        # 且保留回跳参数
 - 关键步骤截图（操作前 / 操作后各一张），失败用例必须附失败现场截图 + 控制台错误。
 - 截图存 `test/report/evidence/`，报告内用相对路径可点击链接。
 
+## 8. 一个用例必须报告全部断言失败，而非仅第一个（软断言）
+
+对包含多个字段的页面（如详情页），**不得遇第一个失败就停止**。必须用软断言（`SoftAssert`）收集该用例内所有失败点，再一次性判定，避免报告只描述部分 bug、遗漏同页其余问题。
+
+❌ 反例（只报第一个 `one_bedroom`，漏报同页的 `¥?`）：
+```python
+for bad in ('one_bedroom', 'outer', '¥?'):
+    expect(bad not in body_text, f'出现异常「{bad}」')   # 第一个就 raise 了
+```
+✅ 正例（收集全部问题一次性抛出）：
+```python
+sa = SoftAssert()
+sa.check_no_bad_text(body_text, ('one_bedroom', 'outer'), '详情页(字段未翻译)')
+sa.check_no_bad_text(body_text, ('¥?',), '详情页(价格占位符)')
+sa.assert_all()   # 一次性报告所有命中项
+```
+
+> 历史教训：TC-APT-017 曾只描述 YUZ-192（英文编码）而漏报同页的 YUZ-196（`¥?` 占位），
+> 根因就是 `expect()` 遇第一个失败即抛出。见 commit 6685c39。
+
 ---
 **维护方式**：发现新的漏检模式 → 先把断言加进对应用例 → 再把通用规则补充到本文件。

@@ -257,6 +257,27 @@ def expect(cond, msg):
         raise AssertionError(msg)
 
 
+class SoftAssert:
+    """软断言：收集一个用例内的所有断言失败，最后一次性抛出，
+    避免多字段页面只报告第一个问题而遗漏其余问题。"""
+    def __init__(self):
+        self.errors = []
+
+    def check(self, cond, msg):
+        if not cond:
+            self.errors.append(msg)
+
+    def check_no_bad_text(self, body_text, bad_list, where='页面'):
+        """检查页面不得出现任何异常文本，返回所有命中的项"""
+        for bad in bad_list:
+            if bad in body_text:
+                self.errors.append(f'{where}出现异常文本「{bad}」')
+
+    def assert_all(self):
+        if self.errors:
+            raise AssertionError('；'.join(self.errors))
+
+
 def expect_toast(text_kw, timeout=6000):
     """等待 vant toast 出现并包含关键字"""
     toast = PAGE.wait_for_selector('.van-toast', timeout=timeout)
@@ -637,12 +658,18 @@ def tc_apt_017():
     shot('TC-APT-017_detail')
     expect('/apartments/' in PAGE.url, f'未进入详情页: {PAGE.url}')
     body_text = PAGE.inner_text('body')
-    expect('浦东张江阳光公寓' in body_text, '详情页未展示房源名称')
-    expect('温馨一居室' in body_text or '房型' in body_text, '详情页未展示房型信息')
-    # 断言规则：不得出现原始编码 / 占位符 / 未处理空值
-    for bad in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer',
-                'undefined', 'null', 'None', 'NaN', '[object Object]', '¥?'):
-        expect(bad not in body_text, f'房源详情页出现异常文本「{bad}」（字段未翻译或占位符未处理）')
+    sa = SoftAssert()
+    sa.check('浦东张江阳光公寓' in body_text, '详情页未展示房源名称')
+    sa.check('温馨一居室' in body_text or '房型' in body_text, '详情页未展示房型信息')
+    # 断言规则：不得出现原始编码 / 占位符 / 未处理空值（收集全部问题，不只第一个）
+    sa.check_no_bad_text(body_text,
+                         ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'),
+                         '房源详情页(字段未翻译为中文标签)')
+    sa.check_no_bad_text(body_text, ('¥?',),
+                         '房源详情页(价格占位符未处理)')
+    sa.check_no_bad_text(body_text, ('undefined', 'null', 'None', 'NaN', '[object Object]'),
+                         '房源详情页(空值未处理)')
+    sa.assert_all()
 
 
 def tc_apt_018():
@@ -703,14 +730,16 @@ def tc_apt_023():
     PAGE.wait_for_timeout(2500)
     shot('TC-APT-023_room_detail')
     body_text = PAGE.inner_text('body')
-    expect('温馨一居室' in body_text, '户型详情未展示名称')
-    # 严格校验：户型/内外窗必须显示中文标签，不得显示原始编码
-    for raw_code in ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'):
-        expect(raw_code not in body_text,
-               f'户型/内外窗未翻译为中文标签，页面直接显示原始编码「{raw_code}」（后端未返回 *_label 字段）')
+    sa = SoftAssert()
+    sa.check('温馨一居室' in body_text, '户型详情未展示名称')
+    # 户型/内外窗必须显示中文标签，不得显示原始编码（收集全部问题）
+    sa.check_no_bad_text(body_text,
+                         ('one_bedroom', 'two_bedroom', 'studio', 'loft', 'duplex', 'inner', 'outer'),
+                         '户型详情页(字段未翻译为中文标签)')
     # 租金必须显示真实数值，不得出现 ¥? 占位
-    expect('¥?' not in body_text and '? /月' not in body_text, '租金显示为占位符「¥?」，未展示真实月租金')
-    expect('租期租金方案' in body_text or '租' in body_text, '户型详情未展示租金方案')
+    sa.check_no_bad_text(body_text, ('¥?', '? /月'), '户型详情页(租金占位符未处理)')
+    sa.check('租期租金方案' in body_text or '租' in body_text, '户型详情未展示租金方案')
+    sa.assert_all()
 
 
 # ---------- 三、收藏模块 ----------
@@ -759,6 +788,51 @@ def tc_fav_008():
     shot('TC-FAV-008_2_after_cancel')
     body_text = PAGE.inner_text('body')
     expect('徐汇滨江雅苑' not in body_text or '暂无收藏' in body_text, '取消收藏后房源仍在列表')
+
+
+def tc_fav_009():
+    """收藏列表点击进入详情（应跳转 /apartments/{apartment_id}，非收藏记录ID）"""
+    # 接口层：拿到收藏记录 id 与 apartment_id，校验前端跳转用的是 apartment_id
+    favs = api('/favorites/my/', body={'page': 1, 'page_size': 10}, token=STATE['tenant_token'])
+    items = favs.get('items', [])
+    expect(items, '无收藏记录，无法测试点击进详情')
+    fav = items[0]
+    apt_id = fav.get('apartment_id')
+    new_context(storage_state=auth_state(STATE['tenant_token'], STATE['tenant_user']))
+    PAGE.goto(f'{BASE_URL}/profile/favorites')
+    PAGE.wait_for_timeout(2500)
+    # 点击第一张收藏卡片（点击区域避开取消收藏按钮）
+    card = PAGE.query_selector('xpath=(//div[contains(@class,"rounded-xl")][.//text()[contains(.,"/月起")]])[1]')
+    if not card:
+        card = PAGE.query_selector('text=/月起')
+    expect(card is not None, '未找到收藏卡片')
+    card.click()
+    PAGE.wait_for_timeout(2500)
+    shot('TC-FAV-009_detail')
+    expect(f'/apartments/{apt_id}' in PAGE.url,
+           f'点击收藏卡片跳转错误：期望 /apartments/{apt_id}（房源ID），实际 {PAGE.url}（可能误用收藏记录ID）')
+    body_text = PAGE.inner_text('body')
+    expect('房源不存在' not in body_text and '未上架' not in body_text,
+           f'点击收藏卡片后报「房源不存在或未上架」（跳转用了错误ID）: {PAGE.url}')
+
+
+def tc_fav_011():
+    """收藏列表-已删除/未上架房源不应展示（需求待澄清，当前标记文档缺口）"""
+    # 准备：租客收藏一套房源，然后商家删除它
+    favs = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
+    items = favs.get('items', [])
+    if not items:
+        raise SkipCase('无收藏记录')
+    apt_id = items[0].get('apartment_id')
+    # 商家删除该房源（若属于当前商家）
+    status, code, _ = api_status(f'/merchant/apartments/{apt_id}/', 'DELETE', token=STATE['merchant_token'])
+    if status not in (200, 204):
+        raise SkipCase(f'该房源不属当前商家，无法删除（status={status}）')
+    # 校验收藏列表是否仍返回已删除房源
+    favs2 = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
+    still = [it for it in favs2.get('items', []) if it.get('apartment_id') == apt_id]
+    expect(len(still) == 0,
+           '已删除房源仍显示在我的收藏列表（后端未按房源状态/删除标记过滤）；注：需求对此场景未明确，见 YUZ-200')
 
 
 # ---------- 四、消息模块 ----------
@@ -896,6 +970,87 @@ def tc_mer_009():
     shot('TC-MER-009_my_apartments')
     body_text = PAGE.inner_text('body')
     expect('浦东张江阳光公寓' in body_text or '上架' in body_text, '已上架房源列表为空')
+
+
+def _setup_merchant_audit_records():
+    """为商家准备 3 种状态的审核记录：pending / approved / rejected。
+    返回商家 token。独立注册一个商家，避免影响其他用例。"""
+    ts = int(time.time()) % 100000000
+    mp = f'137{ts:08d}'
+    register_user(mp)
+    tk, _ = login_token(mp, 'Test123456')
+    select_role(tk, 'landlord')
+    tk, user = login_token(mp, 'Test123456')
+    admin_tk = STATE['admin_token']
+    # 3 套房源：1 通过、1 驳回、1 待审核
+    a_approve = create_apartment(tk, '审批通过房源X')
+    a_reject = create_apartment(tk, '审批驳回房源X')
+    create_apartment(tk, '审批中房源X')  # 保持 pending
+    # 通过 a_approve
+    data = api('/admin/audits/', body={'type': 'first_review', 'status': 'pending', 'page': 1, 'page_size': 100}, token=admin_tk)
+    for it in data.get('items', []):
+        if it.get('apartment_id') == (a_approve.get('apartment_id') or a_approve.get('id')):
+            api(f"/admin/audits/{it['id']}/approve/", 'POST', {}, token=admin_tk)
+    # 驳回 a_reject
+    data = api('/admin/audits/', body={'type': 'first_review', 'status': 'pending', 'page': 1, 'page_size': 100}, token=admin_tk)
+    for it in data.get('items', []):
+        if it.get('apartment_id') == (a_reject.get('apartment_id') or a_reject.get('id')):
+            api(f"/admin/audits/{it['id']}/reject/", 'POST', {'reject_reason': '测试驳回原因'}, token=admin_tk)
+    return tk, user
+
+
+def tc_mer_057():
+    """审核中列表-展示pending和rejected，不包含approved（接口+前端双重校验）"""
+    tk, user = _setup_merchant_audit_records()
+    # 接口层校验
+    data = api('/merchant/audits/', body={'page': 1, 'page_size': 100}, token=tk)
+    statuses = [it.get('status') for it in data.get('items', [])]
+    sa = SoftAssert()
+    sa.check('pending' in statuses, '审核中接口未返回 pending 记录')
+    sa.check('rejected' in statuses, '审核中接口未返回 rejected 记录')
+    sa.check('approved' not in statuses,
+             f'审核中接口错误返回了 approved 记录（应只含 pending/rejected），实际状态集={sorted(set(statuses))}')
+    # 前端层校验
+    new_context(storage_state=auth_state(tk, user))
+    PAGE.goto(f'{BASE_URL}/profile/my-apartments')
+    PAGE.wait_for_timeout(2000)
+    tab = PAGE.query_selector('text=审核中')
+    if tab:
+        tab.click()
+        PAGE.wait_for_timeout(2000)
+    shot('TC-MER-057_audit_tab')
+    body_text = PAGE.inner_text('body')
+    sa.check('审批通过房源X' not in body_text, '前端审核中Tab错误展示了已通过(approved)的房源')
+    sa.assert_all()
+
+
+def tc_mer_064():
+    """审核中列表-不展示已通过审核单"""
+    tk, user = _setup_merchant_audit_records()
+    data = api('/merchant/audits/', body={'page': 1, 'page_size': 100}, token=tk)
+    statuses = [it.get('status') for it in data.get('items', [])]
+    expect('approved' not in statuses,
+           f'审核中列表包含 approved 记录（不应展示已通过审核单），实际状态集={sorted(set(statuses))}')
+
+
+def tc_mer_068():
+    """审核中列表-展示已驳回审核单（含驳回原因）"""
+    tk, user = _setup_merchant_audit_records()
+    data = api('/merchant/audits/', body={'page': 1, 'page_size': 100}, token=tk)
+    rejected = [it for it in data.get('items', []) if it.get('status') == 'rejected']
+    expect(len(rejected) > 0, '审核中列表未展示已驳回(rejected)审核单')
+    # 前端展示驳回记录
+    new_context(storage_state=auth_state(tk, user))
+    PAGE.goto(f'{BASE_URL}/profile/my-apartments')
+    PAGE.wait_for_timeout(2000)
+    tab = PAGE.query_selector('text=审核中')
+    if tab:
+        tab.click()
+        PAGE.wait_for_timeout(2000)
+    shot('TC-MER-068_rejected_shown')
+    body_text = PAGE.inner_text('body')
+    expect('审批驳回房源X' in body_text or '已驳回' in body_text or '驳回' in body_text,
+           '前端审核中Tab未展示已驳回审核单')
 
 
 # ---------- 七、前端页面/UI ----------
@@ -1152,6 +1307,8 @@ CASES = [
     ('TC-FAV-006', '我的收藏列表', '收藏', 'P0', tc_fav_006),
     ('TC-FAV-007', '收藏列表空状态', '收藏', 'P1', tc_fav_007),
     ('TC-FAV-008', '从收藏列表取消收藏', '收藏', 'P0', tc_fav_008),
+    ('TC-FAV-009', '收藏列表点击进入详情', '收藏', 'P1', tc_fav_009),
+    ('TC-FAV-011', '收藏列表-已删除房源不应展示', '收藏', 'P1', tc_fav_011),
     # 消息
     ('TC-MSG-005', '消息列表空状态', '消息', 'P1', tc_msg_005),
     ('TC-MSG-006', '未登录访问消息', '消息', 'P1', tc_msg_006),
@@ -1164,6 +1321,9 @@ CASES = [
     ('TC-MER-001', '发布房源-正常流程', '商家房源', 'P0', tc_mer_001),
     ('TC-MER-008', '非商家访问发布页', '商家房源', 'P0', tc_mer_008),
     ('TC-MER-009', '已上架房源列表', '商家房源', 'P0', tc_mer_009),
+    ('TC-MER-057', '审核中列表-展示pending和rejected不含approved', '商家房源', 'P0', tc_mer_057),
+    ('TC-MER-064', '审核中列表-不展示已通过审核单', '商家房源', 'P1', tc_mer_064),
+    ('TC-MER-068', '审核中列表-展示已驳回审核单', '商家房源', 'P1', tc_mer_068),
     # 前端 UI
     ('TC-UI-001', '路由守卫-未登录拦截', '前端-路由', 'P0', tc_ui_001),
     ('TC-UI-002', '路由守卫-角色权限校验', '前端-路由', 'P0', tc_ui_002),

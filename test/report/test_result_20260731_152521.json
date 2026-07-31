@@ -1,8 +1,8 @@
 {
-  "stamp": "20260731_103125",
-  "total": 44,
-  "passed": 42,
-  "failed": 2,
+  "stamp": "20260731_152521",
+  "total": 49,
+  "passed": 44,
+  "failed": 5,
   "skipped": 0,
   "results": [
     {
@@ -83,7 +83,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.4
+      "duration": 3.5
     },
     {
       "id": "TC-AUTH-018",
@@ -103,7 +103,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.4
+      "duration": 4.3
     },
     {
       "id": "TC-APT-001",
@@ -113,7 +113,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.7
+      "duration": 2.8
     },
     {
       "id": "TC-APT-004",
@@ -180,12 +180,10 @@
       "title": "房源详情-正常展示",
       "module": "房源-详情",
       "priority": "P0",
-      "status": "fail",
-      "note": "AssertionError: 房源详情页出现异常文本「¥?」（字段未翻译或占位符未处理）",
-      "shots": [
-        "FAIL_TC-APT-017.png"
-      ],
-      "duration": 5.5
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.4
     },
     {
       "id": "TC-APT-018",
@@ -205,7 +203,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 5.8
+      "duration": 5.9
     },
     {
       "id": "TC-APT-023",
@@ -225,7 +223,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-FAV-007",
@@ -235,7 +233,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.6
+      "duration": 3.7
     },
     {
       "id": "TC-FAV-008",
@@ -248,6 +246,28 @@
         "FAIL_TC-FAV-008.png"
       ],
       "duration": 5.5
+    },
+    {
+      "id": "TC-FAV-009",
+      "title": "收藏列表点击进入详情",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 点击收藏卡片跳转错误：期望 /apartments/2（房源ID），实际 http://localhost:5174/apartments/1（可能误用收藏记录ID）",
+      "shots": [
+        "FAIL_TC-FAV-009.png"
+      ],
+      "duration": 5.4
+    },
+    {
+      "id": "TC-FAV-011",
+      "title": "收藏列表-已删除房源不应展示",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 已删除房源仍显示在我的收藏列表（后端未按房源状态/删除标记过滤）；注：需求对此场景未明确，见 YUZ-200",
+      "shots": [],
+      "duration": 0.1
     },
     {
       "id": "TC-MSG-005",
@@ -267,7 +287,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.2
+      "duration": 2.3
     },
     {
       "id": "TC-AUD-001",
@@ -277,7 +297,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 3.0
     },
     {
       "id": "TC-AUD-004",
@@ -287,7 +307,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 7.8
+      "duration": 8.0
     },
     {
       "id": "TC-AUD-005",
@@ -297,7 +317,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 8.1
+      "duration": 8.2
     },
     {
       "id": "TC-AUD-007",
@@ -317,7 +337,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.0
+      "duration": 3.1
     },
     {
       "id": "TC-MER-008",
@@ -327,7 +347,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 3.0
+      "duration": 2.9
     },
     {
       "id": "TC-MER-009",
@@ -337,7 +357,39 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
+    },
+    {
+      "id": "TC-MER-057",
+      "title": "审核中列表-展示pending和rejected不含approved",
+      "module": "商家房源",
+      "priority": "P0",
+      "status": "fail",
+      "note": "AssertionError: 审核中接口错误返回了 approved 记录（应只含 pending/rejected），实际状态集=['approved', 'pending', 'rejected']；前端审核中Tab错误展示了已通过(approved)的房源",
+      "shots": [
+        "FAIL_TC-MER-057.png"
+      ],
+      "duration": 5.6
+    },
+    {
+      "id": "TC-MER-064",
+      "title": "审核中列表-不展示已通过审核单",
+      "module": "商家房源",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 审核中列表包含 approved 记录（不应展示已通过审核单），实际状态集=['approved', 'pending', 'rejected']",
+      "shots": [],
+      "duration": 1.1
+    },
+    {
+      "id": "TC-MER-068",
+      "title": "审核中列表-展示已驳回审核单",
+      "module": "商家房源",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.6
     },
     {
       "id": "TC-UI-001",
@@ -347,7 +399,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.2
+      "duration": 2.3
     },
     {
       "id": "TC-UI-002",
@@ -377,7 +429,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.8
+      "duration": 2.9
     },
     {
       "id": "TC-UI-006",
@@ -387,7 +439,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-UI-007",
@@ -397,7 +449,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 2.9
+      "duration": 2.8
     },
     {
       "id": "TC-UI-009",
@@ -407,7 +459,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 5.8
+      "duration": 5.7
     },
     {
       "id": "TC-UI-010",
@@ -427,7 +479,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.2
+      "duration": 4.1
     },
     {
       "id": "TC-SEC-002",
@@ -437,7 +489,7 @@
       "status": "pass",
       "note": "",
       "shots": [],
-      "duration": 4.9
+      "duration": 5.0
     },
     {
       "id": "TC-SEC-007",
