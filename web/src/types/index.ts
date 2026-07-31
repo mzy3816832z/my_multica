@@ -75,6 +75,7 @@ export interface Apartment {
   created_at?: number
   updated_at?: number
   is_favorite?: boolean
+  room_types?: RoomType[]
 }
 
 // 房型
