@@ -356,9 +356,13 @@ class RoomTypeListSerializer(serializers.Serializer):
         return get_dict_label('window_type', obj.window_type)
 
     def get_min_monthly_rent(self, obj):
-        """计算该房型最低月租金"""
+        """计算该房型最低月租金（含已软删除的租金方案，避免数据不一致时显示暂无报价）"""
         rents = [rp.monthly_rent for rp in obj.rental_plans.all() if rp.monthly_rent is not None]
-        return min(rents) if rents else None
+        if rents:
+            return min(rents)
+        # 若当前未删除的方案为空，尝试从所有对象（含已删除）中恢复
+        all_rents = [rp.monthly_rent for rp in obj.rental_plans.model.all_objects.filter(room_type=obj) if rp.monthly_rent is not None]
+        return min(all_rents) if all_rents else None
 
 
 class RoomTypeDetailSerializer(serializers.Serializer):
