@@ -13,6 +13,7 @@ class ErrorCode:
     FORBIDDEN = 403001
     NOT_FOUND = 404001
     CONFLICT = 409001
+    GONE = 410001
     TOO_MANY_REQUESTS = 429001
     SERVER_ERROR = 500001
 
@@ -25,6 +26,7 @@ ERROR_MESSAGES = {
     ErrorCode.FORBIDDEN: '无权限访问',
     ErrorCode.NOT_FOUND: '资源不存在',
     ErrorCode.CONFLICT: '资源冲突',
+    ErrorCode.GONE: '资源已下架或删除',
     ErrorCode.TOO_MANY_REQUESTS: '请求过于频繁',
     ErrorCode.SERVER_ERROR: '服务器内部错误',
 }

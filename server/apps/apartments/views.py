@@ -22,7 +22,7 @@ from apps.apartments.serializers import (
 )
 from apps.apartments.utils import backfill_apartment_min_rent
 from apps.audits.models import AuditRecord
-from core.exceptions import BusinessException, NotFoundException
+from core.exceptions import BusinessException, NotFoundException, GoneException
 from core.pagination import StandardPagination
 from core.response import ErrorCode, unified_response
 
@@ -144,7 +144,7 @@ def apartment_list(request):
     request=None,
     responses={200: ApartmentDetailSerializer},
     summary='房源详情',
-    description='返回完整公寓信息、房型卡片列表及当前用户收藏状态（已登录时）。',
+    description='返回完整公寓信息、房型卡片列表及当前用户收藏状态（已登录时）。若房源已下架或已删除，返回 410 提示用户房源已下架。',
     tags=['公共房源'],
     parameters=[
         {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
@@ -158,9 +158,13 @@ def apartment_detail(request, id):
     房源详情
     """
     try:
-        apartment = Apartment.objects.get(id=id, status='published')
+        apartment = Apartment.all_objects.get(id=id)
     except Apartment.DoesNotExist:
         raise NotFoundException('房源不存在或未上架')
+
+    # 若房源已下架或已删除，返回 410 提示用户
+    if apartment.status != 'published' or apartment.deleted_at is not None:
+        raise GoneException('房源已下架，您可以在收藏列表中取消收藏')
 
     # 自动回填 min_monthly_rent（防御性修复历史脏数据）
     if apartment.min_monthly_rent is None:
