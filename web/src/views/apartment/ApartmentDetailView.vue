@@ -3,9 +3,9 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { getApartmentDetail, getRoomTypesByApartment } from '@/api/apartment'
+import { getApartmentDetail } from '@/api/apartment'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment, RoomType } from '@/types'
+import type { Apartment } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,7 +14,6 @@ const uiStore = useUiStore()
 
 const apartmentId = ref(Number(route.params.id))
 const apartment = ref<Apartment | null>(null)
-const roomTypes = ref<RoomType[]>([])
 const loading = ref(false)
 
 async function fetchDetail() {
@@ -26,12 +25,8 @@ async function fetchDetail() {
   loading.value = true
   uiStore.showLoading('加载中...')
   try {
-    const [aptRes, roomsRes] = await Promise.all([
-      getApartmentDetail(apartmentId.value),
-      getRoomTypesByApartment(apartmentId.value),
-    ])
+    const aptRes = await getApartmentDetail(apartmentId.value)
     apartment.value = aptRes
-    roomTypes.value = roomsRes || []
   } catch {
     // 错误已在 request 拦截器中 toast
   } finally {
@@ -147,16 +142,16 @@ onMounted(() => {
     <div class="mt-3 bg-white p-4">
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-base font-bold text-gray-900">可选户型</h2>
-        <span class="text-sm text-gray-400">{{ roomTypes.length }} 种户型</span>
+        <span class="text-sm text-gray-400">{{ apartment?.room_types?.length || 0 }} 种户型</span>
       </div>
 
-      <div v-if="roomTypes.length === 0 && !loading" class="py-8">
+      <div v-if="!apartment?.room_types || apartment.room_types.length === 0" class="py-8">
         <van-empty description="暂无户型信息" />
       </div>
 
       <div class="space-y-3">
         <div
-          v-for="room in roomTypes"
+          v-for="room in apartment?.room_types || []"
           :key="room.id"
           class="flex gap-3 p-3 bg-gray-50 rounded-xl"
           @click="goRoomTypeDetail(room.id)"
