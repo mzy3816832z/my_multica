@@ -2,6 +2,7 @@
 用户认证相关视图：注册、登录、身份选择、密码管理等
 """
 import logging
+import re
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -26,6 +27,8 @@ from apps.users.serializers import (
 )
 
 logger = logging.getLogger('apps')
+
+PHONE_REGEX = re.compile(r'^1[3-9]\d{9}$')
 
 
 def _generate_tokens(user: User) -> dict:
@@ -73,10 +76,6 @@ def register(request):
     phone = serializer.validated_data['phone']
     sms_code = serializer.validated_data['sms_code']
     password = serializer.validated_data['password']
-
-    # 校验手机号格式
-    if not phone.isdigit():
-        raise ParamErrorException('手机号格式不正确')
 
     # 校验验证码
     if not verify_sms_code(phone, 'register', sms_code, mark_used=True):
@@ -175,9 +174,6 @@ def login_by_code(request):
     phone = serializer.validated_data['phone']
     sms_code = serializer.validated_data['sms_code']
 
-    if not phone.isdigit():
-        raise ParamErrorException('手机号格式不正确')
-
     # 校验验证码
     if not verify_sms_code(phone, 'login', sms_code, mark_used=True):
         raise BusinessException('验证码错误或已过期', code=400002)
@@ -259,9 +255,6 @@ def reset_password(request):
     phone = serializer.validated_data['phone']
     sms_code = serializer.validated_data['sms_code']
     new_password = serializer.validated_data['new_password']
-
-    if not phone.isdigit():
-        raise ParamErrorException('手机号格式不正确')
 
     # 校验验证码
     if not verify_sms_code(phone, 'reset_password', sms_code, mark_used=True):
@@ -358,7 +351,7 @@ logger = logging.getLogger('apps')
 
 class SmsCodeRequestSerializer(serializers.Serializer):
     """短信验证码请求序列化器"""
-    phone = serializers.CharField(max_length=11, min_length=11, help_text='手机号，11位数字')
+    phone = serializers.RegexField(PHONE_REGEX, max_length=11, min_length=11, help_text='手机号，11位数字')
     purpose = serializers.ChoiceField(
         choices=['register', 'login', 'reset_password', 'change_password'],
         help_text='验证码用途',
@@ -390,10 +383,6 @@ def send_sms_code(request):
 
     phone = serializer.validated_data['phone']
     purpose = serializer.validated_data['purpose']
-
-    # 校验手机号格式（纯数字）
-    if not phone.isdigit():
-        raise ParamErrorException('手机号格式不正确')
 
     result = create_and_send_sms_code(phone, purpose)
 
