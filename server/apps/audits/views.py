@@ -55,6 +55,7 @@ def merchant_audit_list(request):
     queryset = AuditRecord.objects.filter(
         deleted_at__isnull=True,
         apartment__landlord=request.user,
+        status__in=['pending', 'rejected'],
     ).annotate(
         status_order=Case(
             When(status='pending', then=Value(1)),

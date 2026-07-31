@@ -65,10 +65,11 @@ async function loadAuditList(isRefresh = false) {
   auditLoading.value = true
   try {
     const data = await getMerchantAudits({ page: auditPage.value, page_size: PAGE_SIZE })
+    const filteredItems = data.items.filter((item: MerchantAuditItem) => item.status !== 'approved')
     if (isRefresh) {
-      auditList.value = data.items
+      auditList.value = filteredItems
     } else {
-      auditList.value.push(...data.items)
+      auditList.value.push(...filteredItems)
     }
     auditPage.value++
     if (auditList.value.length >= data.total) {
