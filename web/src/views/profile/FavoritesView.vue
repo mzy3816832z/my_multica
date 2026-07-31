@@ -61,7 +61,7 @@ async function handleCancel(id: number, event: Event) {
   try {
     await removeFavorite(id)
     showToast('已取消收藏')
-    list.value = list.value.filter((item) => item.id !== id)
+    list.value = list.value.filter((item) => item.apartment_id !== id)
     total.value = Math.max(0, total.value - 1)
   } catch {
     // 错误已在 request 拦截器中 toast
@@ -95,7 +95,7 @@ onMounted(() => {
             v-for="item in list"
             :key="item.id"
             class="bg-white rounded-xl overflow-hidden shadow-sm relative"
-            @click="goDetail(item.id)"
+            @click="goDetail(item.apartment_id)"
           >
             <!-- 封面图 -->
             <div class="relative h-44 bg-gray-100">
@@ -125,7 +125,7 @@ onMounted(() => {
                 plain
                 round
                 icon="delete-o"
-                @click="handleCancel(item.id, $event)"
+                @click="handleCancel(item.apartment_id, $event)"
               >
                 取消收藏
               </van-button>
