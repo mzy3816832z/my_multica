@@ -29,7 +29,7 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-AUTH-001 | 正常注册流程 | 认证-注册 | P0 | 手机号13800138000未注册 | 1. 进入注册页 `/register`<br>2. 输入手机号 `13800138000`<br>3. 点击「获取验证码」<br>4. 输入收到的6位验证码（如 `123456`）<br>5. 输入密码 `abc123`<br>6. 再次确认密码 `abc123`<br>7. 点击「注册」按钮 | 1. 验证码按钮变为禁用，显示「60s后重发」<br>2. 接口返回 `code=200001`，`data.access_token` 为有效JWT字符串<br>3. `data.user.role` 为空字符串 `""`<br>4. `data.user.phone` 为 `"13800138000"`<br>5. Toast 提示「注册成功，请登录」<br>6. 页面跳转至 `/login` | 功能测试 | PRD 3.1 |
+| TC-AUTH-001 | 正常注册流程 | 认证-注册 | P0 | 手机号13800138000未注册 | 1. 进入注册页 `/register`<br>2. 输入手机号 `13800138000`<br>3. 点击「获取验证码」<br>4. 输入收到的6位验证码（如 `123456`）<br>5. 输入密码 `abc123`<br>6. 再次确认密码 `abc123`<br>7. 点击「注册」按钮 | 1. 验证码按钮变为禁用，显示「60s后重发」<br>2. 接口返回 `code=0`，`data.access_token` 为有效JWT字符串<br>3. `data.user.role` 为空字符串 `""`<br>4. `data.user.phone` 为 `"13800138000"`<br>5. Toast 提示「注册成功，请登录」<br>6. 页面跳转至 `/login` | 功能测试 | PRD 3.1 |
 | TC-AUTH-002 | 注册-手机号格式非法（非数字） | 认证-注册 | P1 | 无 | 1. 进入注册页<br>2. 输入手机号 `1380013800a`<br>3. 点击「获取验证码」 | 1. 前端输入框阻止非数字输入 或<br>2. 点击后提示「手机号格式不正确」<br>3. 验证码按钮保持可点击状态 | 功能测试 | PRD 3.1 |
 | TC-AUTH-003 | 注册-手机号长度不足 | 认证-注册 | P1 | 无 | 1. 输入手机号 `1380013800`（10位）<br>2. 点击「获取验证码」 | 前端或后端返回 `400001`，提示「手机号格式不正确」 | 功能测试 | PRD 3.1 |
 | TC-AUTH-004 | 注册-手机号长度超限 | 认证-注册 | P1 | 无 | 1. 输入手机号 `138001380000`（12位）<br>2. 点击「获取验证码」 | 前端截断至11位或后端返回 `400001` | 功能测试 | PRD 3.1 |
@@ -38,7 +38,7 @@
 | TC-AUTH-007 | 注册-验证码5分钟有效期 | 认证-注册 | P1 | 无 | 1. 获取验证码<br>2. 等待超过5分钟<br>3. 使用过期验证码提交注册 | 接口返回 `code=400002`，提示「验证码错误或已过期」 | 接口测试 | PRD 3.1 |
 | TC-AUTH-008 | 注册-重复手机号 | 认证-注册 | P1 | 手机号13800138000已注册 | 1. 输入 `13800138000`<br>2. 获取并填写验证码<br>3. 提交注册 | 接口返回 `code=409001`，提示「该手机号已注册」 | 接口测试 | PRD 3.1 |
 | TC-AUTH-009 | 注册-密码长度边界（5位，不足） | 认证-注册 | P2 | 无 | 1. 输入合法手机号和验证码<br>2. 输入密码 `12345`（5位）<br>3. 提交 | 前端校验不通过，提示「密码至少6位」，注册按钮置灰 | 功能测试 | PRD 3.1 |
-| TC-AUTH-010 | 注册-密码长度边界（6位，刚好） | 认证-注册 | P2 | 无 | 1. 输入合法手机号和验证码<br>2. 输入密码 `123456`（6位）<br>3. 确认密码 `123456`<br>4. 提交 | 注册成功，返回 `code=200001` | 功能测试 | PRD 3.1 |
+| TC-AUTH-010 | 注册-密码长度边界（6位，刚好） | 认证-注册 | P2 | 无 | 1. 输入合法手机号和验证码<br>2. 输入密码 `123456`（6位）<br>3. 确认密码 `123456`<br>4. 提交 | 注册成功，返回 `code=0` | 功能测试 | PRD 3.1 |
 | TC-AUTH-011 | 注册-两次密码不一致 | 认证-注册 | P1 | 无 | 1. 输入手机号、验证码<br>2. 密码输入 `123456`<br>3. 确认密码输入 `654321`<br>4. 提交 | 前端提示「两次密码不一致」，表单未提交 | 功能测试 | PRD 3.1 |
 | TC-AUTH-012 | 注册-未登录状态访问需鉴权页面 | 认证-注册 | P1 | 无 | 1. 注册成功后直接访问 `/profile/favorites` | 路由守卫拦截，URL 跳转至 `/login?redirect=/profile/favorites` | 功能测试 | PRD 3.5 |
 
@@ -46,14 +46,14 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-AUTH-013 | 密码登录-正常流程 | 认证-登录 | P0 | 账号已注册，密码正确 | 1. 进入登录页 `/login`<br>2. 选择「密码登录」Tab<br>3. 输入手机号 `13800138000`<br>4. 输入正确密码 `abc123`<br>5. 点击「登录」 | 1. 接口返回 `code=200001`<br>2. `data.user.role` 为 `"tenant"` 或 `"landlord"` 或 `""`<br>3. 若 `role=""`，跳转 `/select-role`<br>4. 若 `role` 非空，跳转 `/apartments` | 功能测试 | PRD 3.2 |
-| TC-AUTH-014 | 验证码登录-正常流程 | 认证-登录 | P0 | 账号已注册 | 1. 进入登录页<br>2. 选择「验证码登录」Tab<br>3. 输入手机号 `13800138000`<br>4. 点击「获取验证码」<br>5. 输入6位验证码<br>6. 点击「登录」 | 1. 返回 `code=200001`<br>2. 跳转逻辑同密码登录 | 功能测试 | PRD 3.2 |
+| TC-AUTH-013 | 密码登录-正常流程 | 认证-登录 | P0 | 账号已注册，密码正确 | 1. 进入登录页 `/login`<br>2. 选择「密码登录」Tab<br>3. 输入手机号 `13800138000`<br>4. 输入正确密码 `abc123`<br>5. 点击「登录」 | 1. 接口返回 `code=0`<br>2. `data.user.role` 为 `"tenant"` 或 `"landlord"` 或 `""`<br>3. 若 `role=""`，跳转 `/select-role`<br>4. 若 `role` 非空，跳转 `/apartments` | 功能测试 | PRD 3.2 |
+| TC-AUTH-014 | 验证码登录-正常流程 | 认证-登录 | P0 | 账号已注册 | 1. 进入登录页<br>2. 选择「验证码登录」Tab<br>3. 输入手机号 `13800138000`<br>4. 点击「获取验证码」<br>5. 输入6位验证码<br>6. 点击「登录」 | 1. 返回 `code=0`<br>2. 跳转逻辑同密码登录 | 功能测试 | PRD 3.2 |
 | TC-AUTH-015 | 登录-密码错误 | 认证-登录 | P1 | 账号已注册 | 1. 输入手机号 `13800138000`<br>2. 输入错误密码 `wrongpass`<br>3. 点击登录 | 接口返回 `code=400002`，提示「用户名或密码错误」（不暴露账号是否存在） | 功能测试 | PRD 3.2 |
 | TC-AUTH-016 | 登录-账号不存在 | 认证-登录 | P1 | 无 | 1. 输入未注册手机号 `19999999999`<br>2. 输入任意密码<br>3. 点击登录 | 接口返回 `code=404001`，提示「用户名或密码错误」 | 功能测试 | PRD 3.2 |
 | TC-AUTH-017 | 登录-验证码错误 | 认证-登录 | P1 | 无 | 1. 选择验证码登录<br>2. 输入手机号 `13800138000`<br>3. 输入错误验证码 `000000`<br>4. 点击登录 | 接口返回 `code=400002`，提示「验证码错误或已过期」 | 功能测试 | PRD 3.2 |
-| TC-AUTH-018 | 管理员登录-正常流程 | 认证-登录 | P0 | 系统已初始化 | 1. 输入用户名 `admin123`<br>2. 输入密码 `3816832z`<br>3. 点击登录 | 1. 返回 `code=200001`<br>2. `data.user.role` 为 `"admin"`<br>3. 自动跳转 `/admin/audits` | 功能测试 | PRD 3.2 |
+| TC-AUTH-018 | 管理员登录-正常流程 | 认证-登录 | P0 | 系统已初始化 | 1. 输入用户名 `admin123`<br>2. 输入密码 `3816832z`<br>3. 点击登录 | 1. 返回 `code=0`<br>2. `data.user.role` 为 `"admin"`<br>3. 自动跳转 `/admin/audits` | 功能测试 | PRD 3.2 |
 | TC-AUTH-019 | 首次登录强制身份选择 | 认证-登录 | P0 | 新注册用户 | 1. 新注册用户登录成功<br>2. 观察跳转页面 | 强制跳转 `/select-role`，无法通过路由守卫进入 `/apartments` | 功能测试 | PRD 3.2 |
-| TC-AUTH-020 | 身份选择-租客 | 认证-身份选择 | P0 | 已登录，`role=""` | 1. 进入 `/select-role`<br>2. 点击「我是租客」<br>3. 点击「确认选择」 | 1. 接口返回 `code=200001`，`data.role` 为 `"tenant"`<br>2. 跳转 `/apartments`<br>3. 个人中心菜单显示「我的收藏、我的消息、修改密码」 | 功能测试 | PRD 3.2 |
+| TC-AUTH-020 | 身份选择-租客 | 认证-身份选择 | P0 | 已登录，`role=""` | 1. 进入 `/select-role`<br>2. 点击「我是租客」<br>3. 点击「确认选择」 | 1. 接口返回 `code=0`，`data.role` 为 `"tenant"`<br>2. 跳转 `/apartments`<br>3. 个人中心菜单显示「我的收藏、我的消息、修改密码」 | 功能测试 | PRD 3.2 |
 | TC-AUTH-021 | 身份选择-商家 | 认证-身份选择 | P0 | 已登录，`role=""` | 1. 进入 `/select-role`<br>2. 点击「我是商家」<br>3. 点击「确认选择」 | 1. `data.role` 为 `"landlord"`<br>2. 跳转 `/apartments`<br>3. 个人中心菜单显示「我的消息、修改密码、已上架房源」<br>4. 列表页右下角显示悬浮「+」按钮 | 功能测试 | PRD 3.2 |
 | TC-AUTH-022 | 身份选择-重复选择 | 认证-身份选择 | P1 | 已选择过身份 | 1. 直接 POST `/api/v1/auth/select-role` 传 `role=tenant` | 接口返回 `code=400002`，提示「身份已选择，不可重复操作」 | 接口测试 | PRD 3.2 |
 | TC-AUTH-023 | Token失效自动跳转登录 | 认证-鉴权 | P1 | 已登录，token过期 | 1. 等待token过期或清除localStorage中的token<br>2. 访问 `/profile` | 路由守卫拦截，跳转 `/login?redirect=/profile`，提示「请先登录」 | 功能测试 | PRD 3.5 |
@@ -62,9 +62,9 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-AUTH-024 | 忘记密码-正常流程 | 认证-密码管理 | P0 | 账号已注册 | 1. 进入 `/forgot-password`<br>2. 输入手机号 `13800138000`<br>3. 点击「获取验证码」<br>4. 输入验证码<br>5. 输入新密码 `newpass123`<br>6. 提交 | 1. 返回 `code=200001`，`data.success` 为 `true`<br>2. Toast 提示「密码重置成功」<br>3. 自动跳转 `/login` | 功能测试 | PRD 3.3 |
+| TC-AUTH-024 | 忘记密码-正常流程 | 认证-密码管理 | P0 | 账号已注册 | 1. 进入 `/forgot-password`<br>2. 输入手机号 `13800138000`<br>3. 点击「获取验证码」<br>4. 输入验证码<br>5. 输入新密码 `newpass123`<br>6. 提交 | 1. 返回 `code=0`，`data.success` 为 `true`<br>2. Toast 提示「密码重置成功」<br>3. 自动跳转 `/login` | 功能测试 | PRD 3.3 |
 | TC-AUTH-025 | 忘记密码-未注册手机号 | 认证-密码管理 | P1 | 无 | 1. 输入未注册手机号 `19999999999`<br>2. 获取验证码并填写<br>3. 提交 | 接口返回 `code=404001`，提示「用户不存在」 | 功能测试 | PRD 3.3 |
-| TC-AUTH-026 | 修改密码-正常流程 | 认证-密码管理 | P0 | 已登录 | 1. 进入个人中心<br>2. 点击「修改密码」<br>3. 点击「获取验证码」（发送至当前绑定手机号）<br>4. 输入验证码<br>5. 输入新密码 `newpass123`<br>6. 提交 | 1. 返回 `code=200001`<br>2. Toast 提示「密码修改成功」<br>3. 下次登录需使用新密码 | 功能测试 | PRD 3.4 |
+| TC-AUTH-026 | 修改密码-正常流程 | 认证-密码管理 | P0 | 已登录 | 1. 进入个人中心<br>2. 点击「修改密码」<br>3. 点击「获取验证码」（发送至当前绑定手机号）<br>4. 输入验证码<br>5. 输入新密码 `newpass123`<br>6. 提交 | 1. 返回 `code=0`<br>2. Toast 提示「密码修改成功」<br>3. 下次登录需使用新密码 | 功能测试 | PRD 3.4 |
 | TC-AUTH-027 | 修改密码-未绑定手机号 | 认证-密码管理 | P2 | 已登录，用户无phone字段 | 1. 进入修改密码页<br>2. 尝试获取验证码 | 接口返回 `code=400002`，提示「当前用户未绑定手机号」 | 功能测试 | PRD 3.4 |
 | TC-AUTH-028 | 修改密码-验证码错误 | 认证-密码管理 | P1 | 已登录 | 1. 进入修改密码页<br>2. 输入错误验证码 `000000`<br>3. 提交 | 接口返回 `code=400002`，提示「验证码错误或已过期」 | 功能测试 | PRD 3.4 |
 
@@ -72,8 +72,8 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-AUTH-029 | 发送验证码-注册用途 | 认证-短信 | P0 | 无 | POST `/api/v1/auth/sms-code` 请求体 `{"phone": "13800138000", "purpose": "register"}` | 返回 `code=200001`，`data.expires_in` 为 `300`；数据库 `verify_codes` 表新增记录，`purpose="register"`，`used=false` | 接口测试 | PRD 3.1 |
-| TC-AUTH-030 | 发送验证码-登录用途 | 认证-短信 | P0 | 无 | POST `/api/v1/auth/sms-code` 请求体 `{"phone": "13800138000", "purpose": "login"}` | 返回 `code=200001`，`data.expires_in` 为 `300` | 接口测试 | PRD 3.1 |
+| TC-AUTH-029 | 发送验证码-注册用途 | 认证-短信 | P0 | 无 | POST `/api/v1/auth/sms-code` 请求体 `{"phone": "13800138000", "purpose": "register"}` | 返回 `code=0`，`data.expires_in` 为 `300`；数据库 `verify_codes` 表新增记录，`purpose="register"`，`used=false` | 接口测试 | PRD 3.1 |
+| TC-AUTH-030 | 发送验证码-登录用途 | 认证-短信 | P0 | 无 | POST `/api/v1/auth/sms-code` 请求体 `{"phone": "13800138000", "purpose": "login"}` | 返回 `code=0`，`data.expires_in` 为 `300` | 接口测试 | PRD 3.1 |
 | TC-AUTH-031 | 发送验证码-非法purpose | 认证-短信 | P2 | 无 | POST `/api/v1/auth/sms-code` 请求体 `{"phone": "13800138000", "purpose": "invalid"}` | 返回 `code=400001`，参数校验失败 | 接口测试 | PRD 3.1 |
 | TC-AUTH-032 | 验证码使用一次后失效 | 认证-短信 | P1 | 已获取验证码 | 1. 使用验证码注册成功<br>2. 再次使用同一验证码注册 | 第二次返回 `code=400002`，提示「验证码错误或已过期」；数据库该记录 `used=true` | 接口测试 | PRD 3.1 |
 
@@ -85,7 +85,7 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-APT-001 | 房源列表-默认展示 | 房源-列表 | P0 | 存在已上架房源 | 1. 进入房源列表页 `/apartments` | 1. 接口 GET `/api/v1/apartments` 返回 `code=200001`<br>2. `data.items` 中所有房源 `status="published"`<br>3. 按 `updated_at` 字段倒序排列<br>4. 每张卡片显示：`cover_image`（URL字符串）、`name`（公寓名称字符串）、`district_name` + `street_name`（位置字符串）、`min_monthly_rent`（整数，单位元） | 功能测试 | PRD 5.1 |
+| TC-APT-001 | 房源列表-默认展示 | 房源-列表 | P0 | 存在已上架房源 | 1. 进入房源列表页 `/apartments` | 1. 接口 GET `/api/v1/apartments` 返回 `code=0`<br>2. `data.items` 中所有房源 `status="published"`<br>3. 按 `updated_at` 字段倒序排列<br>4. 每张卡片显示：`cover_image`（URL字符串）、`name`（公寓名称字符串）、`district_name` + `street_name`（位置字符串）、`min_monthly_rent`（整数，单位元） | 功能测试 | PRD 5.1 |
 | TC-APT-002 | 房源列表-分页加载 | 房源-列表 | P0 | 房源数量>10 | 1. 进入列表页<br>2. 向下滑动触发加载 | 1. 首次请求 `page=1`，返回10条<br>2. 滑到底部自动请求 `page=2`<br>3. 当 `data.items` 为空时显示「没有更多了」 | 功能测试 | PRD 5.1 |
 | TC-APT-003 | 房源列表-下拉刷新 | 房源-列表 | P1 | 无 | 1. 在列表页下拉 | 1. 触发刷新动画<br>2. 重新请求 `page=1`<br>3. 列表回到顶部，数据更新 | 功能测试 | PRD 5.1 |
 | TC-APT-004 | 房源列表-名称搜索 | 房源-列表 | P0 | 存在多个房源 | 1. 点击搜索栏<br>2. 输入关键词「浦东」<br>3. 点击搜索 | 接口请求 `keyword=浦东`，返回 `data.items` 中所有房源 `name` 字段包含「浦东」 | 功能测试 | PRD 5.2 |
@@ -106,8 +106,8 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-APT-017 | 房源详情-正常展示 | 房源-详情 | P0 | 存在已上架房源（ID=1） | 1. 点击列表卡片进入详情页 `/apartments/1` | 1. 接口 GET `/api/v1/apartments/1` 返回 `code=200001`<br>2. `data.cover_image` 为有效图片URL字符串<br>3. `data.name` 为公寓名称字符串<br>4. `data.district_name` + `data.street_name` + `data.detail_address` 拼接为完整地址<br>5. `data.contact_phone` 为11位手机号字符串<br>6. `data.description` 为描述文本字符串<br>7. `data.room_types` 为房型数组，每个元素包含 `id`、`name`、`images`、`facilities`、`layout_type`、`window_type`、`floor`、`min_monthly_rent`<br>8. 显示收藏按钮 | 功能测试 | PRD 6.1 |
-| TC-APT-018 | 房源详情-收藏/取消收藏 | 房源-详情 | P0 | 租客已登录 | 1. 进入房源详情<br>2. 点击右上角星形图标收藏<br>3. 再次点击取消收藏 | 1. 首次点击：POST `/api/v1/favorites` 返回 `code=200001`，图标变实心黄色，Toast「收藏成功」<br>2. 再次点击：DELETE 返回成功，图标变空心 | 功能测试 | PRD 6.1 |
+| TC-APT-017 | 房源详情-正常展示 | 房源-详情 | P0 | 存在已上架房源（ID=1） | 1. 点击列表卡片进入详情页 `/apartments/1` | 1. 接口 GET `/api/v1/apartments/1` 返回 `code=0`<br>2. `data.cover_image` 为有效图片URL字符串<br>3. `data.name` 为公寓名称字符串<br>4. `data.district_name` + `data.street_name` + `data.detail_address` 拼接为完整地址<br>5. `data.contact_phone` 为11位手机号字符串<br>6. `data.description` 为描述文本字符串<br>7. `data.room_types` 为房型数组，每个元素包含 `id`、`name`、`images`、`facilities`、`layout_type`、`window_type`、`floor`、`min_monthly_rent`<br>8. 显示收藏按钮 | 功能测试 | PRD 6.1 |
+| TC-APT-018 | 房源详情-收藏/取消收藏 | 房源-详情 | P0 | 租客已登录 | 1. 进入房源详情<br>2. 点击右上角星形图标收藏<br>3. 再次点击取消收藏 | 1. 首次点击：POST `/api/v1/favorites` 返回 `code=0`，图标变实心黄色，Toast「收藏成功」<br>2. 再次点击：DELETE 返回成功，图标变空心 | 功能测试 | PRD 6.1 |
 | TC-APT-019 | 房源详情-未登录点击收藏 | 房源-详情 | P1 | 未登录 | 1. 进入房源详情<br>2. 点击收藏按钮 | Toast 提示「请先登录」，路由跳转 `/login?redirect=/apartments/1` | 功能测试 | PRD 6.1 |
 | TC-APT-020 | 房源详情-点击房型卡片 | 房源-详情 | P0 | 无 | 1. 进入房源详情<br>2. 点击任一房型卡片（房型ID=10） | 跳转至户型详情页 `/room-types/10` | 功能测试 | PRD 6.1 |
 | TC-APT-021 | 房源详情-返回按钮 | 房源-详情 | P1 | 无 | 1. 进入房源详情<br>2. 点击左上角返回箭头 | 返回上一页（列表页或收藏页），URL 回退 | 功能测试 | PRD 6.1 |
@@ -117,7 +117,7 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-APT-023 | 户型详情-正常展示 | 房源-户型详情 | P0 | 无 | 1. 从房源详情点击房型卡片进入 `/room-types/10` | 1. 接口 GET `/api/v1/room-types/10` 返回 `code=200001`<br>2. `data.images` 为图片URL数组，长度≥1，轮播展示，首张为 `images[0]`<br>3. `data.name` 为房型名称字符串<br>4. `data.facilities` 为设施编码数组，页面通过 `facilityMap` 映射为中文标签展示（如「空调、洗衣机、冰箱」）<br>5. `data.layout_type` 通过 `layoutTypeMap` 映射展示（如 `one_bedroom` → 「一室一厅」）<br>6. `data.window_type` 通过 `windowTypeMap` 映射展示（如 `inner` → 「内窗」）<br>7. `data.floor` 为整数，展示为「X层」<br>8. `data.rental_plans` 为数组，每个元素展示：`lease_term` 通过 `leaseTermMap` 映射（如 `1_year` → 「1年」）、`monthly_rent` 展示为「¥X,XXX/月」、 `payment_method` 通过 `paymentMethodMap` 映射（如 `pay_1_deposit_1` → 「押一付一」）<br>9. `data.apartment` 包含 `id`、`name`、`cover_image` | 功能测试 | PRD 6.2 |
+| TC-APT-023 | 户型详情-正常展示 | 房源-户型详情 | P0 | 无 | 1. 从房源详情点击房型卡片进入 `/room-types/10` | 1. 接口 GET `/api/v1/room-types/10` 返回 `code=0`<br>2. `data.images` 为图片URL数组，长度≥1，轮播展示，首张为 `images[0]`<br>3. `data.name` 为房型名称字符串<br>4. `data.facilities` 为设施编码数组，页面通过 `facilityMap` 映射为中文标签展示（如「空调、洗衣机、冰箱」）<br>5. `data.layout_type` 通过 `layoutTypeMap` 映射展示（如 `one_bedroom` → 「一室一厅」）<br>6. `data.window_type` 通过 `windowTypeMap` 映射展示（如 `inner` → 「内窗」）<br>7. `data.floor` 为整数，展示为「X层」<br>8. `data.rental_plans` 为数组，每个元素展示：`lease_term` 通过 `leaseTermMap` 映射（如 `1_year` → 「1年」）、`monthly_rent` 展示为「¥X,XXX/月」、 `payment_method` 通过 `paymentMethodMap` 映射（如 `pay_1_deposit_1` → 「押一付一」）<br>9. `data.apartment` 包含 `id`、`name`、`cover_image` | 功能测试 | PRD 6.2 |
 | TC-APT-024 | 户型详情-返回按钮 | 房源-户型详情 | P1 | 无 | 1. 进入户型详情<br>2. 点击返回按钮 | 返回对应公寓房源详情页 `/apartments/{apartment_id}` | 功能测试 | PRD 6.2 |
 | TC-APT-025 | 户型详情-所属房源未上架 | 房源-户型详情 | P2 | 房源状态非published | 1. 直接访问 `/room-types/10`（所属房源未上架） | 接口返回 `code=404001`，提示「房源不存在或未上架」 | 接口测试 | PRD 6.2 |
 
@@ -127,14 +127,14 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-FAV-001 | 添加收藏-正常流程 | 收藏 | P0 | 租客已登录，房源已上架 | 1. 进入房源列表<br>2. 点击某房源卡片上的空心星形图标 | 1. POST `/api/v1/favorites` 返回 `code=200001`<br>2. `data.id` 为收藏记录ID（整数）<br>3. `data.apartment_id` 为房源ID<br>4. 图标变实心黄色<br>5. Toast 提示「收藏成功」 | 功能测试 | PRD 7.2 |
-| TC-FAV-002 | 重复收藏同一房源 | 收藏 | P1 | 已收藏该房源 | 1. 再次点击收藏按钮 | 接口返回 `code=200001`，`data.id` 为原收藏记录ID（幂等，不创建新记录） | 接口测试 | PRD 7.2 |
+| TC-FAV-001 | 添加收藏-正常流程 | 收藏 | P0 | 租客已登录，房源已上架 | 1. 进入房源列表<br>2. 点击某房源卡片上的空心星形图标 | 1. POST `/api/v1/favorites` 返回 `code=0`<br>2. `data.id` 为收藏记录ID（整数）<br>3. `data.apartment_id` 为房源ID<br>4. 图标变实心黄色<br>5. Toast 提示「收藏成功」 | 功能测试 | PRD 7.2 |
+| TC-FAV-002 | 重复收藏同一房源 | 收藏 | P1 | 已收藏该房源 | 1. 再次点击收藏按钮 | 接口返回 `code=0`，`data.id` 为原收藏记录ID（幂等，不创建新记录） | 接口测试 | PRD 7.2 |
 | TC-FAV-003 | 取消收藏后再次收藏 | 收藏 | P1 | 曾收藏后取消 | 1. 取消收藏某房源（逻辑删除）<br>2. 再次点击收藏 | 收藏成功，恢复收藏记录（`deleted_at` 置空），返回原记录ID | 功能测试 | PRD 7.2 |
 | TC-FAV-004 | 收藏不存在的房源 | 收藏 | P2 | 无 | POST `/api/v1/favorites` 请求体 `{"apartment_id": 999999}` | 返回 `code=404001`，提示「房源不存在或未上架」 | 接口测试 | PRD 7.2 |
 | TC-FAV-005 | 未登录添加收藏 | 收藏 | P1 | 未登录 | 1. 点击收藏按钮 | Toast 提示「请先登录」，跳转 `/login` | 功能测试 | PRD 7.2 |
-| TC-FAV-006 | 我的收藏列表 | 收藏 | P0 | 租客已登录，有收藏记录 | 1. 进入个人中心<br>2. 点击「我的收藏」 | 1. GET `/api/v1/favorites` 返回 `code=200001`<br>2. `data.items` 按 `created_at` 倒序排列<br>3. 每条记录包含：`id`、`apartment_id`、`apartment_name`、`cover_image`、`district_name`、`street_name`、`min_monthly_rent`<br>4. 卡片样式与列表页一致 | 功能测试 | PRD 7.2 |
+| TC-FAV-006 | 我的收藏列表 | 收藏 | P0 | 租客已登录，有收藏记录 | 1. 进入个人中心<br>2. 点击「我的收藏」 | 1. GET `/api/v1/favorites` 返回 `code=0`<br>2. `data.items` 按 `created_at` 倒序排列<br>3. 每条记录包含：`id`、`apartment_id`、`apartment_name`、`cover_image`、`district_name`、`street_name`、`min_monthly_rent`<br>4. 卡片样式与列表页一致 | 功能测试 | PRD 7.2 |
 | TC-FAV-007 | 收藏列表空状态 | 收藏 | P1 | 无收藏记录 | 1. 进入我的收藏页 | 展示 `van-empty` 组件，提示「暂无收藏」 | UI测试 | PRD 7.2 |
-| TC-FAV-008 | 从收藏列表取消收藏 | 收藏 | P0 | 有收藏记录 | 1. 进入我的收藏<br>2. 点击某房源的「取消收藏」按钮 | 1. DELETE `/api/v1/favorites/by-apartment/{id}` 返回 `code=200001`<br>2. Toast 提示「已取消收藏」<br>3. 该房源从列表移除 | 功能测试 | PRD 7.2 |
+| TC-FAV-008 | 从收藏列表取消收藏 | 收藏 | P0 | 有收藏记录 | 1. 进入我的收藏<br>2. 点击某房源的「取消收藏」按钮 | 1. DELETE `/api/v1/favorites/by-apartment/{id}` 返回 `code=0`<br>2. Toast 提示「已取消收藏」<br>3. 该房源从列表移除 | 功能测试 | PRD 7.2 |
 | TC-FAV-009 | 收藏列表点击进入详情 | 收藏 | P1 | 有收藏记录 | 1. 进入我的收藏<br>2. 点击收藏卡片 | 跳转对应房源详情页 `/apartments/{apartment_id}` | 功能测试 | PRD 7.2 |
 | TC-FAV-010 | 收藏列表分页加载 | 收藏 | P1 | 收藏数量>10 | 1. 进入我的收藏<br>2. 向下滑动 | 自动加载下一页，直至 `data.items` 为空 | 功能测试 | PRD 7.2 |
 
@@ -144,8 +144,8 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-MSG-001 | 消息列表-正常展示 | 消息 | P0 | 商家有审核驳回记录 | 1. 进入个人中心<br>2. 点击「我的消息」 | 1. GET `/api/v1/messages` 返回 `code=200001`<br>2. `data.items` 按时间倒序<br>3. 每条消息包含：`id`、`type`（`first_rejected` 或 `change_rejected`）、`title`、`content`、`is_read`（布尔值）、`created_at`<br>4. 未读消息 `is_read=false` 显示红点/加粗 | 功能测试 | PRD 7.3 |
-| TC-MSG-002 | 消息标记已读 | 消息 | P0 | 存在未读消息（ID=5） | 1. 进入消息列表<br>2. 点击一条未读消息 | 1. POST `/api/v1/messages/5/read` 返回 `code=200001`<br>2. 该消息 `is_read` 变为 `true`<br>3. 未读数减1 | 功能测试 | PRD 7.3 |
+| TC-MSG-001 | 消息列表-正常展示 | 消息 | P0 | 商家有审核驳回记录 | 1. 进入个人中心<br>2. 点击「我的消息」 | 1. GET `/api/v1/messages` 返回 `code=0`<br>2. `data.items` 按时间倒序<br>3. 每条消息包含：`id`、`type`（`first_rejected` 或 `change_rejected`）、`title`、`content`、`is_read`（布尔值）、`created_at`<br>4. 未读消息 `is_read=false` 显示红点/加粗 | 功能测试 | PRD 7.3 |
+| TC-MSG-002 | 消息标记已读 | 消息 | P0 | 存在未读消息（ID=5） | 1. 进入消息列表<br>2. 点击一条未读消息 | 1. POST `/api/v1/messages/5/read` 返回 `code=0`<br>2. 该消息 `is_read` 变为 `true`<br>3. 未读数减1 | 功能测试 | PRD 7.3 |
 | TC-MSG-003 | 未读消息数 | 消息 | P1 | 存在未读消息 | 1. 查看个人中心消息菜单角标 | 角标数字等于未读消息数量（`is_read=false` 的消息总数） | 功能测试 | PRD 7.3 |
 | TC-MSG-004 | 审核驳回消息-跳转编辑页 | 消息 | P0 | 商家收到驳回消息 | 1. 点击审核驳回类消息 | 跳转至对应房源编辑页 `/profile/apartments/{apartment_id}/edit` | 功能测试 | PRD 7.3 |
 | TC-MSG-005 | 消息列表空状态 | 消息 | P1 | 无消息记录 | 1. 进入我的消息页 | 展示 `van-empty`，提示「暂无消息」 | UI测试 | PRD 7.3 |
@@ -160,11 +160,11 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-AUD-001 | 审核列表-提交审核Tab | 管理员审核 | P0 | 管理员已登录，有待审核首次提交 | 1. 进入审核管理页 `/admin/audits`<br>2. 查看「提交审核」Tab | 1. GET `/api/v1/admin/audits?type=first_review` 返回 `code=200001`<br>2. `data.items` 中所有记录 `type="first_review"` 且 `status="pending"`<br>3. 按提交时间倒序排列 | 功能测试 | PRD 8.2 |
-| TC-AUD-002 | 审核列表-变更审核Tab | 管理员审核 | P0 | 管理员已登录，有待审核变更 | 1. 切换至「变更审核」Tab | 1. GET `/api/v1/admin/audits?type=change_review` 返回 `code=200001`<br>2. `data.items` 中所有记录 `type="change_review"` 且 `status="pending"`<br>3. 按提交时间倒序排列 | 功能测试 | PRD 8.3 |
+| TC-AUD-001 | 审核列表-提交审核Tab | 管理员审核 | P0 | 管理员已登录，有待审核首次提交 | 1. 进入审核管理页 `/admin/audits`<br>2. 查看「提交审核」Tab | 1. GET `/api/v1/admin/audits?type=first_review` 返回 `code=0`<br>2. `data.items` 中所有记录 `type="first_review"` 且 `status="pending"`<br>3. 按提交时间倒序排列 | 功能测试 | PRD 8.2 |
+| TC-AUD-002 | 审核列表-变更审核Tab | 管理员审核 | P0 | 管理员已登录，有待审核变更 | 1. 切换至「变更审核」Tab | 1. GET `/api/v1/admin/audits?type=change_review` 返回 `code=0`<br>2. `data.items` 中所有记录 `type="change_review"` 且 `status="pending"`<br>3. 按提交时间倒序排列 | 功能测试 | PRD 8.3 |
 | TC-AUD-003 | 审核列表-搜索 | 管理员审核 | P1 | 无 | 1. 在搜索栏输入房源名称关键词「测试」<br>2. 回车搜索 | 接口请求 `keyword=测试`，返回 `data.items` 中关联房源 `name` 包含「测试」 | 功能测试 | PRD 8.1 |
-| TC-AUD-004 | 审核列表-快捷通过 | 管理员审核 | P0 | 有待审核记录（ID=3） | 1. 点击某审核卡片的「通过」按钮<br>2. 确认弹框中点击确认 | 1. POST `/api/v1/admin/audits/3/approve` 返回 `code=200001`<br>2. `data.status` 为 `"approved"`<br>3. Toast 提示「已通过」<br>4. 列表刷新，该记录状态变为「已通过」 | 功能测试 | PRD 8.2 |
-| TC-AUD-005 | 审核列表-快捷驳回 | 管理员审核 | P0 | 有待审核记录（ID=3） | 1. 点击「驳回」按钮<br>2. 填写驳回原因「信息不完整」<br>3. 点击确认 | 1. POST `/api/v1/admin/audits/3/reject` 返回 `code=200001`<br>2. `data.status` 为 `"rejected"`<br>3. Toast 提示「已驳回」<br>4. 列表刷新，状态变为「已驳回」 | 功能测试 | PRD 8.2 |
+| TC-AUD-004 | 审核列表-快捷通过 | 管理员审核 | P0 | 有待审核记录（ID=3） | 1. 点击某审核卡片的「通过」按钮<br>2. 确认弹框中点击确认 | 1. POST `/api/v1/admin/audits/3/approve` 返回 `code=0`<br>2. `data.status` 为 `"approved"`<br>3. Toast 提示「已通过」<br>4. 列表刷新，该记录状态变为「已通过」 | 功能测试 | PRD 8.2 |
+| TC-AUD-005 | 审核列表-快捷驳回 | 管理员审核 | P0 | 有待审核记录（ID=3） | 1. 点击「驳回」按钮<br>2. 填写驳回原因「信息不完整」<br>3. 点击确认 | 1. POST `/api/v1/admin/audits/3/reject` 返回 `code=0`<br>2. `data.status` 为 `"rejected"`<br>3. Toast 提示「已驳回」<br>4. 列表刷新，状态变为「已驳回」 | 功能测试 | PRD 8.2 |
 | TC-AUD-006 | 审核列表-驳回原因必填 | 管理员审核 | P1 | 无 | 1. 点击驳回<br>2. 不填原因直接确认 | 前端校验提示「请填写驳回原因」，表单未提交 | 功能测试 | PRD 8.2 |
 | TC-AUD-007 | 非管理员访问审核列表 | 管理员审核 | P1 | 租客/商家登录 | 1. 直接访问 `/admin/audits` | 路由守卫拦截，提示「暂无权限访问该页面」，跳转 `/apartments` | 功能测试 | PRD 3.5 |
 | TC-AUD-008 | 非管理员调用审核接口 | 管理员审核 | P1 | 租客/商家登录 | POST `/api/v1/admin/audits/1/approve` | 返回 `code=403001`，提示「无权限访问」 | 接口测试 | PRD 3.5 |
@@ -173,7 +173,7 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-AUD-009 | 首次审核详情-展示 | 管理员审核 | P0 | 有待审核首次提交（ID=3） | 1. 点击审核卡片进入详情 `/admin/audits/3` | 1. GET `/api/v1/admin/audits/3` 返回 `code=200001`<br>2. `data.type` 为 `"first_review"`<br>3. `data.status` 为 `"pending"`<br>4. `data.submitted_data` 包含完整房源快照（`name`、`cover_image`、`description`、`district_id`、`street_id`、`detail_address`、`contact_phone`、`room_types` 数组）<br>5. 页面底部显示「通过」和「驳回」按钮 | 功能测试 | PRD 8.2 |
+| TC-AUD-009 | 首次审核详情-展示 | 管理员审核 | P0 | 有待审核首次提交（ID=3） | 1. 点击审核卡片进入详情 `/admin/audits/3` | 1. GET `/api/v1/admin/audits/3` 返回 `code=0`<br>2. `data.type` 为 `"first_review"`<br>3. `data.status` 为 `"pending"`<br>4. `data.submitted_data` 包含完整房源快照（`name`、`cover_image`、`description`、`district_id`、`street_id`、`detail_address`、`contact_phone`、`room_types` 数组）<br>5. 页面底部显示「通过」和「驳回」按钮 | 功能测试 | PRD 8.2 |
 | TC-AUD-010 | 变更审核详情-变更字段高亮 | 管理员审核 | P0 | 有待审核变更单（ID=4） | 1. 进入变更审核详情 `/admin/audits/4` | 1. `data.type` 为 `"change_review"`<br>2. `data.changed_fields` 为变更字段名数组（如 `["name", "district_id"]`）<br>3. `data.original_data` 和 `data.submitted_data` 均完整展示<br>4. `changed_fields` 中的字段在页面上以红色高亮标注 | 功能测试 | PRD 8.3 |
 | TC-AUD-011 | 首次审核通过-房源上架 | 管理员审核 | P0 | 有待审核首次提交（ID=3） | 1. 管理员点击通过 | 1. 房源状态从 `pending_first_review` 变为 `published`<br>2. 房源进入公共房源列表 `/apartments`<br>3. 商家无通知发送 | 接口测试 | PRD 8.2 |
 | TC-AUD-012 | 首次审核驳回-状态变更 | 管理员审核 | P0 | 有待审核首次提交（ID=3） | 1. 管理员填写原因「照片不清晰」后驳回 | 1. 房源状态变为 `first_rejected`<br>2. 商家收到站内信：`type="first_rejected"`，`title="房源审核被驳回"`，`content` 包含驳回原因<br>3. 商家收到短信通知（若绑定手机号） | 接口测试 | PRD 8.2 |
@@ -189,7 +189,7 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-MER-001 | 发布房源-完整正向流程 | 商家房源 | P0 | 商家已登录 | 1. 点击悬浮「+」按钮<br>2. 公寓名称输入「浦东张江精品公寓」（8个字符）<br>3. 上传总览图（jpg/png/webp，≤5MB）<br>4. 描述输入「近地铁，精装修，拎包入住」（12个字符）<br>5. 行政区选择「浦东新区」（`district_id=1`）<br>6. 街道选择「张江镇」（`street_id=10`）<br>7. 详细门牌号输入「张江路123号」<br>8. 联系电话输入 `13800138000`<br>9. 点击「添加房型」<br>10. 房型名称输入「朝南主卧」<br>11. 上传房型图片3张（jpg格式，每张≤5MB）<br>12. 户型选择「一室一厅」（`layout_type=one_bedroom`）<br>13. 窗户类型选择「外窗」（`window_type=outer`）<br>14. 楼层输入 `5`<br>15. 设施选择「空调、洗衣机、冰箱」（`facilities=["air_conditioner", "washing_machine", "refrigerator"]`）<br>16. 添加租金方案：租期「1年」（`lease_term=1_year`）、月租金 `3500`、支付方式「押一付一」（`payment_method=pay_1_deposit_1`）<br>17. 保存房型<br>18. 点击「提交审核」 | 1. POST `/api/v1/merchant/apartments` 返回 `code=200001`<br>2. `data.apartment_id` 为新建公寓ID（正整数）<br>3. `data.audit_id` 为首次审核记录ID（正整数）<br>4. 数据库 `apartments` 表新增记录：`status="pending_first_review"`，`landlord_id` 为当前用户ID<br>5. Toast 提示「提交成功，等待审核」<br>6. 跳转 `/profile/my-apartments` | 功能测试 | PRD 4.2-4.4 |
+| TC-MER-001 | 发布房源-完整正向流程 | 商家房源 | P0 | 商家已登录 | 1. 点击悬浮「+」按钮<br>2. 公寓名称输入「浦东张江精品公寓」（8个字符）<br>3. 上传总览图（jpg/png/webp，≤5MB）<br>4. 描述输入「近地铁，精装修，拎包入住」（12个字符）<br>5. 行政区选择「浦东新区」（`district_id=1`）<br>6. 街道选择「张江镇」（`street_id=10`）<br>7. 详细门牌号输入「张江路123号」<br>8. 联系电话输入 `13800138000`<br>9. 点击「添加房型」<br>10. 房型名称输入「朝南主卧」<br>11. 上传房型图片3张（jpg格式，每张≤5MB）<br>12. 户型选择「一室一厅」（`layout_type=one_bedroom`）<br>13. 窗户类型选择「外窗」（`window_type=outer`）<br>14. 楼层输入 `5`<br>15. 设施选择「空调、洗衣机、冰箱」（`facilities=["air_conditioner", "washing_machine", "refrigerator"]`）<br>16. 添加租金方案：租期「1年」（`lease_term=1_year`）、月租金 `3500`、支付方式「押一付一」（`payment_method=pay_1_deposit_1`）<br>17. 保存房型<br>18. 点击「提交审核」 | 1. POST `/api/v1/merchant/apartments` 返回 `code=0`<br>2. `data.apartment_id` 为新建公寓ID（正整数）<br>3. `data.audit_id` 为首次审核记录ID（正整数）<br>4. 数据库 `apartments` 表新增记录：`status="pending_first_review"`，`landlord_id` 为当前用户ID<br>5. Toast 提示「提交成功，等待审核」<br>6. 跳转 `/profile/my-apartments` | 功能测试 | PRD 4.2-4.4 |
 | TC-MER-002 | 公寓名称-必填校验 | 商家房源 | P1 | 商家已登录 | 1. 不填写公寓名称<br>2. 点击「提交审核」 | 前端校验：「公寓名称」输入框下方显示红色提示「请输入公寓名称」，表单未提交 | 功能测试 | PRD 4.2 |
 | TC-MER-003 | 公寓名称-长度边界（空字符串） | 商家房源 | P2 | 商家已登录 | 1. 输入空字符串或仅空格<br>2. 点击提交 | 前端校验失败，提示「请输入公寓名称」 | 功能测试 | PRD 4.2 |
 | TC-MER-004 | 公寓名称-长度边界（50字刚好） | 商家房源 | P2 | 商家已登录 | 1. 输入50个字符的公寓名称<br>2. 点击提交 | 校验通过，提交成功 | 功能测试 | PRD 4.2 |
@@ -264,10 +264,10 @@
 
 | 用例ID | 用例标题 | 所属模块 | 优先级 | 前置条件 | 操作步骤 | 预期结果 | 测试类型 | 关联需求 |
 |---|---|---|---|---|---|---|---|---|
-| TC-MER-056 | 已上架房源列表 | 商家房源 | P0 | 商家已登录，有published房源 | 1. 进入个人中心<br>2. 点击「已上架房源」 | 1. GET `/api/v1/merchant/apartments` 返回 `code=200001`<br>2. `data.items` 中所有房源 `status="published"`<br>3. 按 `updated_at` 倒序排列 | 功能测试 | PRD 7.5 |
+| TC-MER-056 | 已上架房源列表 | 商家房源 | P0 | 商家已登录，有published房源 | 1. 进入个人中心<br>2. 点击「已上架房源」 | 1. GET `/api/v1/merchant/apartments` 返回 `code=0`<br>2. `data.items` 中所有房源 `status="published"`<br>3. 按 `updated_at` 倒序排列 | 功能测试 | PRD 7.5 |
 | TC-MER-057 | 审核中房源列表 | 商家房源 | P0 | 商家有审核中房源 | 1. 切换至「审核中」Tab | 展示 `status="pending_first_review"` 和 `status="pending_change_review"` 的房源/审核单 | 功能测试 | PRD 7.5 |
-| TC-MER-058 | 编辑房源-非关键字段直接更新 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 点击房源卡片进入编辑<br>2. 修改描述字段为「新描述」<br>3. 提交 | 1. PUT `/api/v1/merchant/apartments/1` 返回 `code=200001`<br>2. `data.updated=true`<br>3. `data.audit_id=null`<br>4. 无审核单生成 | 功能测试 | PRD 7.6 |
-| TC-MER-059 | 编辑房源-修改名称触发变更审核 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 进入编辑页<br>2. 修改公寓名称为「新名称」<br>3. 提交 | 1. 返回 `code=200001`<br>2. `data.updated=false`<br>3. `data.audit_id` 为新生成的变更审核ID（正整数）<br>4. 原房源保持 `published` | 功能测试 | PRD 7.6 |
+| TC-MER-058 | 编辑房源-非关键字段直接更新 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 点击房源卡片进入编辑<br>2. 修改描述字段为「新描述」<br>3. 提交 | 1. PUT `/api/v1/merchant/apartments/1` 返回 `code=0`<br>2. `data.updated=true`<br>3. `data.audit_id=null`<br>4. 无审核单生成 | 功能测试 | PRD 7.6 |
+| TC-MER-059 | 编辑房源-修改名称触发变更审核 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 进入编辑页<br>2. 修改公寓名称为「新名称」<br>3. 提交 | 1. 返回 `code=0`<br>2. `data.updated=false`<br>3. `data.audit_id` 为新生成的变更审核ID（正整数）<br>4. 原房源保持 `published` | 功能测试 | PRD 7.6 |
 | TC-MER-060 | 编辑房源-修改位置触发变更审核 | 商家房源 | P0 | 有已上架房源（ID=1） | 1. 修改行政区或街道或门牌号<br>2. 提交 | 生成变更审核单，`data.updated=false`，原房源保持不变 | 功能测试 | PRD 7.6 |
 | TC-MER-061 | 删除房源-首次提交审核单 | 商家房源 | P1 | 有审核中房源 | 1. 在审核中Tab点击删除 | 1. 房源 `deleted_at` 设置为当前时间（逻辑删除）<br>2. 关联审核单 `deleted_at` 设置为当前时间 | 功能测试 | PRD 7.5 |
 | TC-MER-062 | 删除房源-变更审核单 | 商家房源 | P1 | 有变更审核中房源 | 1. 删除变更审核中的房源 | 1. 房源原信息不变<br>2. 仅变更审核单 `deleted_at` 设置（逻辑删除） | 功能测试 | PRD 7.5 |
@@ -408,7 +408,7 @@
 
 | Code | Meaning |
 |------|---------|
-| 200001 | Success |
+| 0 | Success |
 | 400001 | Param Error |
 | 400002 | Business Error |
 | 401001 | Unauthorized |
