@@ -184,7 +184,8 @@ onMounted(() => {
           </div>
           <div class="text-right">
             <div class="text-danger text-lg font-bold">
-              ¥{{ plan.monthly_rent }}
+              <template v-if="plan.monthly_rent != null">¥{{ plan.monthly_rent }}</template>
+              <template v-else>暂无报价</template>
             </div>
             <div class="text-xs text-gray-500">/月</div>
           </div>

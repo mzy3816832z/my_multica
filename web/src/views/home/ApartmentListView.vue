@@ -327,7 +327,8 @@ onMounted(() => {
                 </p>
               </div>
               <div class="flex items-center justify-between mt-2">
-                <span class="text-primary font-bold">¥{{ item.min_monthly_rent || '?' }}/月起</span>
+                <span v-if="item.min_monthly_rent != null" class="text-primary font-bold">¥{{ item.min_monthly_rent }}/月起</span>
+                <span v-else class="text-sm text-gray-400">暂无报价</span>
                 <van-icon
                   v-if="authStore.isTenant"
                   :name="item.is_favorite ? 'star' : 'star-o'"

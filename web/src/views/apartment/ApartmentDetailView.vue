@@ -137,8 +137,9 @@ onMounted(() => {
         {{ apartment?.description || '暂无描述' }}
       </div>
       <div class="mt-3 flex items-baseline">
-        <span class="text-danger text-xl font-bold">¥{{ apartment?.min_monthly_rent || '?' }}</span>
-        <span class="text-sm text-gray-500 ml-1">/月起</span>
+        <span v-if="apartment?.min_monthly_rent != null" class="text-danger text-xl font-bold">¥{{ apartment.min_monthly_rent }}</span>
+        <span v-else class="text-sm text-gray-400">暂无报价</span>
+        <span v-if="apartment?.min_monthly_rent != null" class="text-sm text-gray-500 ml-1">/月起</span>
       </div>
     </div>
 
@@ -181,8 +182,9 @@ onMounted(() => {
               <van-tag>{{ room.floor }}层</van-tag>
             </div>
             <div class="mt-2 flex items-baseline">
-              <span class="text-danger text-base font-bold">¥{{ room.min_monthly_rent || '?' }}</span>
-              <span class="text-xs text-gray-500 ml-1">/月起</span>
+              <span v-if="room.min_monthly_rent != null" class="text-danger text-base font-bold">¥{{ room.min_monthly_rent }}</span>
+              <span v-else class="text-sm text-gray-400">暂无报价</span>
+              <span v-if="room.min_monthly_rent != null" class="text-xs text-gray-500 ml-1">/月起</span>
             </div>
           </div>
           <div class="flex items-center text-gray-400">
