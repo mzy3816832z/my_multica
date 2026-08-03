@@ -20,11 +20,16 @@ from apps.apartments.serializers import (
     MerchantApartmentUpdateResponseSerializer,
 )
 from core.permissions import IsLandlord
+from core.response import UnifiedErrorResponseSerializer
 
 
 @extend_schema(
     request=None,
-    responses={200: MerchantApartmentListSerializer(many=True)},
+    responses={
+        200: MerchantApartmentListSerializer(many=True),
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
     summary='商家已上架房源列表',
     description='返回当前登录商家所有已上架（published）的房源列表，支持分页。',
     tags=['商家房源'],
@@ -35,7 +40,12 @@ from core.permissions import IsLandlord
 )
 @extend_schema(
     request=ApartmentCreateSerializer,
-    responses={200: ApartmentResponseSerializer},
+    responses={
+        200: ApartmentResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
     summary='商家发布房源',
     description='商家发布房源并提交首次审核。校验公寓基础信息、至少 1 组房型、房型图片 ≤5 张、租期租金方案 ≥1 组；保存公寓状态为 pending_first_review 并创建 first_review 审核记录。',
     tags=['商家房源'],
@@ -55,7 +65,12 @@ def merchant_apartments(request):
 
 @extend_schema(
     request=None,
-    responses={200: MerchantApartmentDetailSerializer},
+    responses={
+        200: MerchantApartmentDetailSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='商家自有房源详情',
     description='获取当前商家指定房源的完整详情，含房型、租金方案及待审核状态。',
     tags=['商家房源'],
@@ -65,7 +80,13 @@ def merchant_apartments(request):
 )
 @extend_schema(
     request=ApartmentUpdateSerializer,
-    responses={200: MerchantApartmentUpdateResponseSerializer},
+    responses={
+        200: MerchantApartmentUpdateResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='商家编辑房源',
     description=(
         '编辑商家自有房源。若 name、district_id、street_id、detail_address '
@@ -80,7 +101,12 @@ def merchant_apartments(request):
 )
 @extend_schema(
     request=None,
-    responses={200: MerchantApartmentDeleteResponseSerializer},
+    responses={
+        200: MerchantApartmentDeleteResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='商家删除房源',
     description='逻辑删除商家自有房源，并同步软删除关联的未批准（pending）审核单。',
     tags=['商家房源'],

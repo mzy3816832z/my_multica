@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
 
-from core.response import unified_response
+from core.response import unified_response, UnifiedErrorResponseSerializer
 from core.exceptions import ParamErrorException
 from apps.dicts.models import SystemDict
 from apps.dicts.serializers import SystemDictSerializer
@@ -16,7 +16,10 @@ logger = logging.getLogger('apps')
 
 @extend_schema(
     request=None,
-    responses={200: SystemDictSerializer(many=True)},
+    responses={
+        200: SystemDictSerializer(many=True),
+        400: UnifiedErrorResponseSerializer,
+    },
     summary='字典列表',
     description='按 category 查询系统字典项列表。',
     tags=['字典'],

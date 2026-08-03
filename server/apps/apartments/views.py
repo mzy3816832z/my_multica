@@ -24,7 +24,7 @@ from apps.apartments.utils import backfill_apartment_min_rent
 from apps.audits.models import AuditRecord
 from core.exceptions import BusinessException, NotFoundException, GoneException
 from core.pagination import StandardPagination
-from core.response import ErrorCode, unified_response
+from core.response import ErrorCode, unified_response, UnifiedErrorResponseSerializer
 
 logger = logging.getLogger('apps')
 
@@ -35,7 +35,9 @@ logger = logging.getLogger('apps')
 
 @extend_schema(
     request=None,
-    responses={200: ApartmentListItemSerializer(many=True)},
+    responses={
+        200: ApartmentListItemSerializer(many=True),
+    },
     summary='公共房源列表',
     description='仅展示已上架（published）房源，支持组合筛选与分页。筛选条件可叠加，结果按审核通过时间（updated_at）倒序。',
     tags=['公共房源'],
@@ -142,9 +144,13 @@ def apartment_list(request):
 
 @extend_schema(
     request=None,
-    responses={200: ApartmentDetailSerializer},
+    responses={
+        200: ApartmentDetailSerializer,
+        404: UnifiedErrorResponseSerializer,
+        410: UnifiedErrorResponseSerializer,
+    },
     summary='房源详情',
-    description='返回完整公寓信息、房型卡片列表及当前用户收藏状态（已登录时）。若房源已下架或已删除，返回 410 提示用户房源已下架。',
+    description='返回完整公寓信息、房型卡片列表及当前用户收藏状态（已登录时）。若房源已下架或已删除，返回 410001 提示用户房源已下架。',
     tags=['公共房源'],
     parameters=[
         {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
@@ -176,7 +182,10 @@ def apartment_detail(request, id):
 
 @extend_schema(
     request=None,
-    responses={200: RoomTypeDetailSerializer(many=True)},
+    responses={
+        200: RoomTypeDetailSerializer(many=True),
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='房源下所有房型',
     description='获取指定房源下的所有房型详情（含租金方案）。',
     tags=['公共房源'],
@@ -205,7 +214,10 @@ def apartment_room_types(request, id):
 
 @extend_schema(
     request=None,
-    responses={200: RoomTypeDetailSerializer},
+    responses={
+        200: RoomTypeDetailSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='户型详情',
     description='获取指定户型详情，包含完整租金方案及所属公寓简要信息。',
     tags=['公共房源'],

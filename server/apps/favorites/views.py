@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
-from core.response import unified_response, ErrorCode
+from core.response import unified_response, ErrorCode, UnifiedErrorResponseSerializer
 from core.exceptions import NotFoundException, BusinessException
 from core.pagination import StandardPagination
 from apps.favorites.models import Favorite
@@ -39,7 +39,12 @@ def _extract_first_error(errors):
 
 @extend_schema(
     request=FavoriteCreateSerializer,
-    responses={200: FavoriteCreateResponseSerializer},
+    responses={
+        200: FavoriteCreateResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='添加收藏',
     description='收藏指定公寓。若已收藏（含已逻辑删除后恢复），返回已有/恢复后的记录。',
     tags=['收藏'],
@@ -99,7 +104,10 @@ def add_favorite(request):
 
 @extend_schema(
     request=None,
-    responses={200: FavoriteListItemSerializer(many=True)},
+    responses={
+        200: FavoriteListItemSerializer(many=True),
+        401: UnifiedErrorResponseSerializer,
+    },
     summary='我的收藏列表',
     description='返回当前登录用户的收藏列表，按收藏时间（created_at）倒序，支持分页。包含所有收藏记录，已下架/已删除的房源会标记 is_offline=true。',
     tags=['收藏'],
@@ -147,7 +155,11 @@ def my_favorites(request):
 
 @extend_schema(
     request=None,
-    responses={200: None},
+    responses={
+        200: None,
+        401: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='按房源 ID 取消收藏',
     description='按房源 ID 取消收藏（逻辑删除）。只能取消自己的收藏。',
     tags=['收藏'],

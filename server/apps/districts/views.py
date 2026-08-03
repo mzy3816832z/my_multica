@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema
 
-from core.response import unified_response
+from core.response import unified_response, UnifiedErrorResponseSerializer
 from core.exceptions import ParamErrorException
 from apps.districts.models import District
 from apps.districts.serializers import DistrictSerializer
@@ -16,7 +16,10 @@ logger = logging.getLogger('apps')
 
 @extend_schema(
     request=None,
-    responses={200: DistrictSerializer(many=True)},
+    responses={
+        200: DistrictSerializer(many=True),
+        400: UnifiedErrorResponseSerializer,
+    },
     summary='行政区划列表',
     description='获取行政区划列表。level=1 返回上海行政区列表；level=2 需配合 parent_id 返回对应街道/镇列表。',
     tags=['行政区划'],

@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 
-from core.response import unified_response
+from core.response import unified_response, UnifiedErrorResponseSerializer
 from core.exceptions import NotFoundException
 from core.pagination import StandardPagination
 from apps.messages_app.models import Message
@@ -21,7 +21,10 @@ logger = logging.getLogger('apps')
 
 @extend_schema(
     request=None,
-    responses={200: MessageListItemSerializer(many=True)},
+    responses={
+        200: MessageListItemSerializer(many=True),
+        401: UnifiedErrorResponseSerializer,
+    },
     summary='站内信列表',
     description='返回当前登录用户的站内信列表，按创建时间倒序，支持分页。',
     tags=['消息'],
@@ -48,7 +51,11 @@ def message_list(request):
 
 @extend_schema(
     request=None,
-    responses={200: MessageReadSerializer},
+    responses={
+        200: MessageReadSerializer,
+        401: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='标记站内信已读',
     description='将指定站内信标记为已读。只能标记属于自己的消息。',
     tags=['消息'],
@@ -82,7 +89,10 @@ def message_read(request, id):
 
 @extend_schema(
     request=None,
-    responses={200: MessageUnreadCountSerializer},
+    responses={
+        200: MessageUnreadCountSerializer,
+        401: UnifiedErrorResponseSerializer,
+    },
     summary='未读消息数',
     description='返回当前登录用户的未读站内信数量。',
     tags=['消息'],

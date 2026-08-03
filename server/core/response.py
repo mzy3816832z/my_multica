@@ -2,7 +2,7 @@
 统一响应体与错误码
 """
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import serializers, status
 
 
 class ErrorCode:
@@ -36,6 +36,13 @@ ERROR_MESSAGES = {
     ErrorCode.TOO_MANY_REQUESTS: '请求过于频繁',
     ErrorCode.SERVER_ERROR: '服务器内部错误',
 }
+
+
+class UnifiedErrorResponseSerializer(serializers.Serializer):
+    """统一错误响应序列化器（用于 Swagger 文档）"""
+    code = serializers.IntegerField(help_text='业务错误码')
+    message = serializers.CharField(help_text='错误描述')
+    data = serializers.DictField(help_text='响应数据（错误时通常为空对象）', default=dict)
 
 
 def unified_response(data=None, code=ErrorCode.SUCCESS, message=None, status_code=status.HTTP_200_OK):

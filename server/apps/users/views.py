@@ -10,7 +10,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from core.response import unified_response, ErrorCode
+from core.response import unified_response, ErrorCode, UnifiedErrorResponseSerializer
 from core.exceptions import ParamErrorException, BusinessException, UnauthorizedException
 from core.verify_code import verify_sms_code
 from core.permissions import IsTenant, IsLandlord, IsAdmin
@@ -57,7 +57,11 @@ def _user_to_dict(user: User) -> dict:
 
 @extend_schema(
     request=RegisterSerializer,
-    responses={200: TokenResponseSerializer},
+    responses={
+        200: TokenResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        409: UnifiedErrorResponseSerializer,
+    },
     summary='用户注册',
     description='手机号+验证码注册，注册成功后 role 为空，需前端跳转身份选择。',
     tags=['认证'],
@@ -110,7 +114,12 @@ def register(request):
 
 @extend_schema(
     request=LoginByPasswordSerializer,
-    responses={200: TokenResponseSerializer},
+    responses={
+        200: TokenResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
     summary='用户名+密码登录',
     description='用户名+密码登录（普通用户用户名为手机号），返回 token 与用户信息。role 为空时需前端跳转身份选择。',
     tags=['认证'],
@@ -155,7 +164,12 @@ def login_by_password(request):
 
 @extend_schema(
     request=LoginByCodeSerializer,
-    responses={200: TokenResponseSerializer},
+    responses={
+        200: TokenResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
     summary='手机号+验证码登录',
     description='手机号+验证码登录，无需密码。role 为空时需前端跳转身份选择。',
     tags=['认证'],
@@ -201,7 +215,11 @@ def login_by_code(request):
 
 @extend_schema(
     request=SelectRoleSerializer,
-    responses={200: UserSerializer},
+    responses={
+        200: UserSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+    },
     summary='首次登录选择身份',
     description='首次登录后选择身份（tenant/landlord），仅 role 为空时可调用。',
     tags=['认证'],
@@ -236,7 +254,11 @@ def select_role(request):
 
 @extend_schema(
     request=ResetPasswordSerializer,
-    responses={200: None},
+    responses={
+        200: None,
+        400: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='忘记密码重置',
     description='通过手机号+验证码重置密码。',
     tags=['认证'],
@@ -278,7 +300,11 @@ def reset_password(request):
 
 @extend_schema(
     request=ChangePasswordSerializer,
-    responses={200: None},
+    responses={
+        200: None,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+    },
     summary='修改密码',
     description='登录用户修改密码，需短信验证码。',
     tags=['认证'],
@@ -317,7 +343,10 @@ def change_password(request):
 
 
 @extend_schema(
-    responses={200: UserSerializer},
+    responses={
+        200: UserSerializer,
+        401: UnifiedErrorResponseSerializer,
+    },
     summary='获取当前登录用户',
     description='获取当前登录用户信息。',
     tags=['认证'],
@@ -365,7 +394,10 @@ class SmsCodeResponseSerializer(serializers.Serializer):
 
 @extend_schema(
     request=SmsCodeRequestSerializer,
-    responses={200: SmsCodeResponseSerializer},
+    responses={
+        200: SmsCodeResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+    },
     summary='发送短信验证码',
     description='发送短信验证码，含频控：1分钟限发1次，1小时限发10次。V1.0 为 mock 模式。',
     tags=['认证'],

@@ -23,7 +23,7 @@ from apps.messages_app.models import Message
 from core.exceptions import BusinessException, NotFoundException
 from core.pagination import StandardPagination
 from core.permissions import IsAdmin, IsLandlord
-from core.response import ErrorCode, unified_response
+from core.response import ErrorCode, unified_response, UnifiedErrorResponseSerializer
 from core.sms import send_sms
 
 logger = logging.getLogger('apps')
@@ -35,7 +35,11 @@ logger = logging.getLogger('apps')
 
 @extend_schema(
     request=None,
-    responses={200: MerchantAuditListItemSerializer(many=True)},
+    responses={
+        200: MerchantAuditListItemSerializer(many=True),
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
     summary='商家审核记录列表',
     description='商家查看自有房源的审核记录列表。仅 landlord 角色可访问，只能查看自己的房源审核记录。支持分页、按房源名称 keyword 搜索，按提交时间倒序。',
     tags=['商家审核'],
@@ -82,7 +86,11 @@ def merchant_audit_list(request):
 
 @extend_schema(
     request=None,
-    responses={200: AuditListItemSerializer(many=True)},
+    responses={
+        200: AuditListItemSerializer(many=True),
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
     summary='审核单列表',
     description='管理员查看审核单列表。支持按 type、status 筛选，支持按房源名称 keyword 搜索，按提交时间倒序。',
     tags=['管理员审核'],
@@ -133,7 +141,12 @@ def audit_list(request):
 
 @extend_schema(
     request=None,
-    responses={200: AuditDetailSerializer},
+    responses={
+        200: AuditDetailSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='审核详情',
     description='管理员查看审核单详情。变更审核返回 original_data、submitted_data、changed_fields。',
     tags=['管理员审核'],
@@ -159,7 +172,13 @@ def audit_detail(request, id):
 
 @extend_schema(
     request=AuditApproveSerializer,
-    responses={200: AuditActionResponseSerializer},
+    responses={
+        200: AuditActionResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='通过审核',
     description=(
         '管理员通过审核。首次审核通过将公寓置为 published；'
@@ -217,7 +236,13 @@ def audit_approve(request, id):
 
 @extend_schema(
     request=AuditRejectSerializer,
-    responses={200: AuditActionResponseSerializer},
+    responses={
+        200: AuditActionResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
     summary='驳回审核',
     description=(
         '管理员驳回审核。首次审核驳回将公寓置为 first_rejected；'
