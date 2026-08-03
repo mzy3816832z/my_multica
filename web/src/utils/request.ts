@@ -28,9 +28,29 @@ request.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     const res = response.data
     if (res.code !== 0) {
-      // 业务错误统一提示
+      // 按业务码分发
+      if (res.code === 401001) {
+        showToast('登录已过期，请重新登录')
+        const authStore = useAuthStore()
+        authStore.logout()
+        window.location.href = '/login'
+        const err = new Error(res.message || '登录已过期，请重新登录') as Error & { code?: number }
+        err.code = res.code
+        return Promise.reject(err) as any
+      }
+
+      if (res.code === 410001) {
+        // 已下架/已删除，不弹通用 toast，reject 时携带 code 供页面级处理
+        const err = new Error(res.message || '资源已下架或删除') as Error & { code?: number }
+        err.code = res.code
+        return Promise.reject(err) as any
+      }
+
+      // 其余业务码统一 toast message 后 reject，Error 对象挂 code 字段
       showToast(res.message || '请求失败')
-      return Promise.reject(new Error(res.message || '请求失败')) as any
+      const err = new Error(res.message || '请求失败') as Error & { code?: number }
+      err.code = res.code
+      return Promise.reject(err) as any
     }
     return res.data
   },
@@ -39,10 +59,9 @@ request.interceptors.response.use(
     uiStore.hideLoading()
 
     const status = error.response?.status
-    const code = error.response?.data?.code
     const message = error.response?.data?.message || error.message
 
-    if (status === 401 || code === 401001) {
+    if (status === 401) {
       showToast('登录已过期，请重新登录')
       const authStore = useAuthStore()
       authStore.logout()
@@ -50,12 +69,12 @@ request.interceptors.response.use(
       return Promise.reject(error)
     }
 
-    if (status === 403 || code === 403001) {
+    if (status === 403) {
       showToast('暂无权限访问')
       return Promise.reject(error)
     }
 
-    if (status === 429 || code === 429001) {
+    if (status === 429) {
       showToast('操作过于频繁，请稍后再试')
       return Promise.reject(error)
     }
