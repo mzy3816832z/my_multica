@@ -113,6 +113,10 @@ export interface RoomType {
   window_type_label?: string
   floor: number
   sort: number
+  area?: number | null
+  orientation?: string | null
+  orientation_label?: string | null
+  available_date?: string | null
   rental_plans?: RentalPlan[]
   min_monthly_rent?: number
 }
