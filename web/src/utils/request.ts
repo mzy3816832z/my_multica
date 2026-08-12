@@ -11,6 +11,71 @@ const request: AxiosInstance = axios.create({
   },
 })
 
+let isRefreshing = false
+type QueueItem = {
+  resolve: (token: string) => void
+  reject: (error: unknown) => void
+}
+let failedQueue: QueueItem[] = []
+
+function processQueue(error: unknown, token: string | null = null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error)
+    } else {
+      resolve(token!)
+    }
+  })
+  failedQueue = []
+}
+
+async function refreshAccessToken(): Promise<string> {
+  const authStore = useAuthStore()
+  if (!authStore.refreshToken) {
+    throw new Error('No refresh token')
+  }
+  const response = await axios.post(
+    `${request.defaults.baseURL}/auth/refresh/`,
+    { refresh_token: authStore.refreshToken }
+  )
+  const { access_token, refresh_token } = response.data.data
+  authStore.setToken(access_token, refresh_token)
+  return access_token
+}
+
+function handle401WithRefresh(config: InternalAxiosRequestConfig): Promise<unknown> {
+  if (config.url?.includes('/auth/refresh/')) {
+    const authStore = useAuthStore()
+    authStore.logout()
+    window.location.href = '/login'
+    return Promise.reject(new Error('login expired'))
+  }
+
+  if (!isRefreshing) {
+    isRefreshing = true
+
+    refreshAccessToken()
+      .then((newToken) => {
+        isRefreshing = false
+        processQueue(null, newToken)
+      })
+      .catch((error) => {
+        isRefreshing = false
+        processQueue(error, null)
+        const authStore = useAuthStore()
+        authStore.logout()
+        window.location.href = '/login'
+      })
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    failedQueue.push({ resolve, reject })
+  }).then((token) => {
+    config.headers.Authorization = `Bearer ${token}`
+    return request(config)
+  })
+}
+
 // 请求拦截器：注入 JWT Token
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -28,25 +93,16 @@ request.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
     const res = response.data
     if (res.code !== 0) {
-      // 按业务码分发
       if (res.code === 401001) {
-        showToast('登录已过期，请重新登录')
-        const authStore = useAuthStore()
-        authStore.logout()
-        window.location.href = '/login'
-        const err = new Error(res.message || '登录已过期，请重新登录') as Error & { code?: number }
-        err.code = res.code
-        return Promise.reject(err) as any
+        return handle401WithRefresh(response.config)
       }
 
       if (res.code === 410001) {
-        // 已下架/已删除，不弹通用 toast，reject 时携带 code 供页面级处理
         const err = new Error(res.message || '资源已下架或删除') as Error & { code?: number }
         err.code = res.code
         return Promise.reject(err) as any
       }
 
-      // 其余业务码统一 toast message 后 reject，Error 对象挂 code 字段
       showToast(res.message || '请求失败')
       const err = new Error(res.message || '请求失败') as Error & { code?: number }
       err.code = res.code
@@ -62,11 +118,7 @@ request.interceptors.response.use(
     const message = error.response?.data?.message || error.message
 
     if (status === 401) {
-      showToast('登录已过期，请重新登录')
-      const authStore = useAuthStore()
-      authStore.logout()
-      window.location.href = '/login'
-      return Promise.reject(error)
+      return handle401WithRefresh(error.config!)
     }
 
     if (status === 403) {

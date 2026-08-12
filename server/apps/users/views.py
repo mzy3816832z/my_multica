@@ -24,6 +24,8 @@ from apps.users.serializers import (
     ChangePasswordSerializer,
     TokenResponseSerializer,
     UserSerializer,
+    RefreshTokenSerializer,
+    RefreshTokenResponseSerializer,
 )
 
 logger = logging.getLogger('apps')
@@ -363,6 +365,57 @@ def me(request):
         data=_user_to_dict(user),
         code=ErrorCode.SUCCESS,
     )
+
+
+@extend_schema(
+    request=RefreshTokenSerializer,
+    responses={
+        200: RefreshTokenResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+    },
+    summary='刷新 Access Token',
+    description='使用 refresh_token 获取新的 access_token 和 refresh_token。refresh_token 过期后需重新登录。',
+    tags=['认证'],
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def token_refresh(request):
+    """
+    POST /api/v1/auth/refresh
+    刷新 Access Token
+    """
+    serializer = RefreshTokenSerializer(data=request.data)
+    if not serializer.is_valid():
+        raise ParamErrorException(serializer.errors)
+
+    refresh_token_str = serializer.validated_data['refresh_token']
+
+    try:
+        refresh = RefreshToken(refresh_token_str)
+        user_id = refresh.get('user_id')
+        if not user_id:
+            raise BusinessException('无效的 Token', code=ErrorCode.UNAUTHORIZED)
+        user = User.objects.get(id=user_id)
+        if not user.is_active:
+            raise BusinessException('账号已被禁用', code=ErrorCode.ACCOUNT_DISABLED)
+    except BusinessException:
+        raise
+    except Exception:
+        raise BusinessException('Token 无效或已过期', code=ErrorCode.UNAUTHORIZED)
+
+    tokens = _generate_tokens(user)
+    logger.info(f'[TokenRefresh] user={user.id}')
+
+    return unified_response(
+        data={
+            'access_token': tokens['access_token'],
+            'refresh_token': tokens['refresh_token'],
+        },
+        code=ErrorCode.SUCCESS,
+    )
+
+
 """
 用户认证相关视图：短信验证码、注册、登录等
 """

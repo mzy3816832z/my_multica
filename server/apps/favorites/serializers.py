@@ -26,5 +26,6 @@ class FavoriteListItemSerializer(serializers.Serializer):
     district_name = serializers.CharField(help_text='行政区名称')
     street_name = serializers.CharField(help_text='街道/镇名称')
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
+    min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     is_offline = serializers.BooleanField(help_text='房源是否已下架/已删除')
     created_at = TimestampField(help_text='收藏时间')
