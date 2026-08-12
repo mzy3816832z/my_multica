@@ -5,6 +5,7 @@ import copy
 import logging
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
@@ -33,13 +34,22 @@ logger = logging.getLogger('apps')
 # 公共房源接口（公开访问）
 # ============================================================
 
+SORT_OPTIONS = {
+    'latest': ['-updated_at'],
+    'price_asc': [F('min_monthly_rent').asc(nulls_last=True), '-updated_at'],
+    'price_desc': [F('min_monthly_rent').desc(nulls_last=True), '-updated_at'],
+    'area_desc': [F('min_area').desc(nulls_last=True), '-updated_at'],
+    'area_asc': [F('min_area').asc(nulls_last=True), '-updated_at'],
+}
+
+
 @extend_schema(
     request=None,
     responses={
         200: ApartmentListItemSerializer(many=True),
     },
     summary='公共房源列表',
-    description='仅展示已上架（published）房源，支持组合筛选与分页。筛选条件可叠加，结果按审核通过时间（updated_at）倒序。',
+    description='仅展示已上架（published）房源，支持组合筛选、排序与分页。筛选条件可叠加，默认按审核通过时间（updated_at）倒序。',
     tags=['公共房源'],
     parameters=[
         {'name': 'keyword', 'in': 'query', 'schema': {'type': 'string'}, 'description': '公寓名称关键词'},
@@ -49,6 +59,7 @@ logger = logging.getLogger('apps')
         {'name': 'lease_terms', 'in': 'query', 'schema': {'type': 'array', 'items': {'type': 'string'}}, 'description': '租期编码数组（多选）'},
         {'name': 'min_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最低月租金'},
         {'name': 'max_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最高月租金'},
+        {'name': 'sort', 'in': 'query', 'schema': {'type': 'string'}, 'description': '排序方式：latest(默认) / price_asc / price_desc / area_desc / area_asc'},
         {'name': 'page', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '页码，默认 1'},
         {'name': 'page_size', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '每页条数，默认 10，最大 100'},
     ],
@@ -60,7 +71,9 @@ def apartment_list(request):
     GET /api/v1/apartments
     公共房源列表（仅 published）
     """
-    queryset = Apartment.objects.filter(status='published').order_by('-updated_at')
+    sort = request.query_params.get('sort', 'latest')
+    ordering = SORT_OPTIONS.get(sort, SORT_OPTIONS['latest'])
+    queryset = Apartment.objects.filter(status='published').order_by(*ordering)
 
     # 关键词搜索（公寓名称）
     keyword = request.query_params.get('keyword')

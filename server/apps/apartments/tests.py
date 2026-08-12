@@ -129,6 +129,64 @@ class PublicApartmentListTests(TestCase):
         self.assertEqual(items[0]['id'], self.apartment_b.id)
         self.assertEqual(items[1]['id'], self.apartment_a.id)
 
+    def test_list_sort_price_asc(self):
+        """sort=price_asc：按价格升序排列"""
+        response = self.client.get(self.url, {'sort': 'price_asc'})
+        data = response.json()['data']
+        items = data['items']
+        self.assertEqual(items[0]['id'], self.apartment_a.id)
+        self.assertEqual(items[0]['min_monthly_rent'], 3000)
+        self.assertEqual(items[1]['id'], self.apartment_b.id)
+        self.assertEqual(items[1]['min_monthly_rent'], 5000)
+
+    def test_list_sort_price_desc(self):
+        """sort=price_desc：按价格降序排列"""
+        response = self.client.get(self.url, {'sort': 'price_desc'})
+        data = response.json()['data']
+        items = data['items']
+        self.assertEqual(items[0]['id'], self.apartment_b.id)
+        self.assertEqual(items[0]['min_monthly_rent'], 5000)
+        self.assertEqual(items[1]['id'], self.apartment_a.id)
+        self.assertEqual(items[1]['min_monthly_rent'], 3000)
+
+    def test_list_sort_invalid_defaults_to_latest(self):
+        """非法的 sort 参数回退到默认 latest 排序"""
+        response = self.client.get(self.url, {'sort': 'invalid'})
+        data = response.json()['data']
+        items = data['items']
+        self.assertEqual(items[0]['id'], self.apartment_b.id)
+        self.assertEqual(items[1]['id'], self.apartment_a.id)
+
+    def test_list_sort_price_asc_with_null(self):
+        """价格升序时，null 值排在最后"""
+        apartment_null = Apartment.objects.create(
+            landlord=self.landlord,
+            name='无报价公寓',
+            cover_image='https://example.com/null.jpg',
+            description='无报价',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路3号',
+            contact_phone='13800138002',
+            status='published',
+            min_monthly_rent=None,
+        )
+        response = self.client.get(self.url, {'sort': 'price_asc'})
+        data = response.json()['data']
+        items = data['items']
+        self.assertEqual(data['total'], 3)
+        self.assertEqual(items[0]['id'], self.apartment_a.id)
+        self.assertEqual(items[1]['id'], self.apartment_b.id)
+        self.assertEqual(items[2]['id'], apartment_null.id)
+        self.assertIsNone(items[2]['min_monthly_rent'])
+
+    def test_list_sort_preserves_filters(self):
+        """排序保留已有的筛选条件"""
+        response = self.client.get(self.url, {'sort': 'price_asc', 'min_price': 4000})
+        data = response.json()['data']
+        self.assertEqual(data['total'], 1)
+        self.assertEqual(data['items'][0]['id'], self.apartment_b.id)
+
     def test_list_pagination(self):
         """分页参数生效"""
         response = self.client.get(self.url, {'page': 1, 'page_size': 1})

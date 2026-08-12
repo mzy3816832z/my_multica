@@ -35,6 +35,15 @@ const filter = reactive({
   max_price: undefined as number | undefined,
 })
 
+const sort = ref('latest')
+const sortOptions = [
+  { text: '最新上架', value: 'latest' },
+  { text: '价格从低到高', value: 'price_asc' },
+  { text: '价格从高到低', value: 'price_desc' },
+  { text: '面积从大到小', value: 'area_desc' },
+  { text: '面积从小到大', value: 'area_asc' },
+]
+
 
 // 行政区名称静态映射（仅用于展示名称和排序，真实ID从接口获取）
 const districtNameMap = new Map<string, number>([
@@ -148,6 +157,7 @@ async function fetchList(isRefresh = false) {
       lease_terms: filter.lease_terms.length > 0 ? filter.lease_terms : undefined,
       min_price: filter.min_price,
       max_price: filter.max_price,
+      sort: sort.value !== 'latest' ? sort.value : undefined,
       page: currentPage,
       page_size: pageSize.value,
     }
@@ -164,7 +174,9 @@ async function fetchList(isRefresh = false) {
       page.value++
     }
   } catch {
-    // 错误已在 request 拦截器中 toast
+    if (sort.value !== 'latest') {
+      showToast('排序加载失败，请重试')
+    }
   } finally {
     loading.value = false
     refreshing.value = false
@@ -203,6 +215,15 @@ function onFilterReset() {
 function onFilterClear() {
   onFilterReset()
   onFilterConfirm()
+}
+
+function onSortChange() {
+  scrollToTop()
+  onRefresh()
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function goDetail(id: number) {
@@ -287,6 +308,18 @@ onMounted(() => {
           <van-badge v-if="activeFilterCount > 0" :content="activeFilterCount" class="ml-1" />
         </div>
       </div>
+
+      <van-dropdown-menu active-color="#1989fa">
+        <van-dropdown-item
+          v-model="sort"
+          :options="sortOptions"
+          @change="onSortChange"
+        >
+          <template #title>
+            <span class="text-sm">{{ sortOptions.find(o => o.value === sort)?.text || '排序' }}</span>
+          </template>
+        </van-dropdown-item>
+      </van-dropdown-menu>
     </div>
 
     <!-- 列表内容 -->

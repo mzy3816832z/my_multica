@@ -61,6 +61,11 @@ class Apartment(BaseModel):
         blank=True,
         verbose_name='最低月租金（缓存）',
     )
+    min_area = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='最小面积（缓存）',
+    )
 
     objects = SoftDeleteManager()
     all_objects = AllObjectsManager()

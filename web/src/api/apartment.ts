@@ -9,6 +9,7 @@ export interface ApartmentListParams {
   lease_terms?: string[]
   min_price?: number
   max_price?: number
+  sort?: string
   page?: number
   page_size?: number
 }
