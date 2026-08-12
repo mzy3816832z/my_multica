@@ -120,6 +120,7 @@ export interface Message {
   title: string
   content: string
   related_apartment_id: number
+  related_apartment_name?: string | null
   related_audit_id?: number
   is_read: boolean
   created_at: number

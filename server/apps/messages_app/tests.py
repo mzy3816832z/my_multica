@@ -89,10 +89,12 @@ class MessageListTests(TestCase):
         self.assertIn('title', data)
         self.assertIn('content', data)
         self.assertIn('related_apartment_id', data)
+        self.assertIn('related_apartment_name', data)
         self.assertIn('related_audit_id', data)
         self.assertIn('is_read', data)
         self.assertIn('created_at', data)
         self.assertEqual(data['related_apartment_id'], self.apartment.id)
+        self.assertEqual(data['related_apartment_name'], self.apartment.name)
 
     def test_list_unauthorized(self):
         """未登录返回 401"""

@@ -41,7 +41,7 @@ def message_list(request):
     站内信列表（当前登录用户）
     """
     user = request.user
-    queryset = Message.objects.filter(user=user).order_by('-created_at', '-id')
+    queryset = Message.objects.filter(user=user).select_related('related_apartment').order_by('-created_at', '-id')
 
     paginator = StandardPagination()
     page = paginator.paginate_queryset(queryset, request)
