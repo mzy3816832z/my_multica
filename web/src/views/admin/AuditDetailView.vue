@@ -183,91 +183,96 @@ onMounted(() => {
 
     <div v-else class="pb-24">
       <!-- 基本信息卡片 -->
-      <div class="bg-white m-3 rounded-xl overflow-hidden shadow-sm">
-        <div class="flex p-3 gap-3">
-          <van-image
-            :src="(detail.submitted_data as any)?.cover_image || ''"
-            fit="cover"
-            class="w-24 h-24 rounded-lg flex-shrink-0"
-          />
-          <div class="flex-1 min-w-0 flex flex-col justify-between">
-            <div>
-              <div class="text-sm font-bold text-gray-900 truncate">
-                {{ (detail.submitted_data as any)?.name || '-' }}
+      <div class="detail-container">
+        <div class="bg-white m-3 rounded-xl overflow-hidden shadow-sm">
+          <div class="flex p-3 gap-3">
+            <van-image
+              :src="(detail.submitted_data as any)?.cover_image || ''"
+              fit="cover"
+              class="w-24 h-24 rounded-lg flex-shrink-0"
+            />
+            <div class="flex-1 min-w-0 flex flex-col justify-between">
+              <div>
+                <div class="text-sm font-bold text-gray-900 truncate">
+                  {{ (detail.submitted_data as any)?.name || '-' }}
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ auditTypeText(detail.type) }}
+                </div>
+                <div v-if="detail.changed_fields && detail.changed_fields.length > 0" class="text-xs text-danger mt-0.5">
+                  变更字段：{{ detail.changed_fields.join('、') }}
+                </div>
+                <div class="text-xs text-gray-400 mt-0.5">
+                  提交时间：{{ formatDateTime(detail.created_at) }}
+                </div>
               </div>
-              <div class="text-xs text-gray-500 mt-1">
-                {{ auditTypeText(detail.type) }}
+              <div class="flex items-center justify-between mt-2">
+                <van-tag :type="auditStatusType(detail.status)" size="medium" round>
+                  {{ auditStatusText(detail.status) }}
+                </van-tag>
               </div>
-              <div v-if="detail.changed_fields && detail.changed_fields.length > 0" class="text-xs text-danger mt-0.5">
-                变更字段：{{ detail.changed_fields.join('、') }}
-              </div>
-              <div class="text-xs text-gray-400 mt-0.5">
-                提交时间：{{ formatDateTime(detail.created_at) }}
-              </div>
-            </div>
-            <div class="flex items-center justify-between mt-2">
-              <van-tag :type="auditStatusType(detail.status)" size="medium" round>
-                {{ auditStatusText(detail.status) }}
-              </van-tag>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 提交数据详情 -->
-      <div class="bg-white m-3 rounded-xl overflow-hidden shadow-sm">
-        <div class="px-4 py-3 border-b border-gray-100 font-bold text-sm">提交信息</div>
-        <van-cell-group :border="false">
-          <van-cell
-            v-for="f in baseFields"
-            :key="f.key"
-            :title="f.label"
-            :class="isChangedField(f.key) ? 'changed-field' : ''"
-          >
-            <template #value>
-              <span :class="fieldClass(f.key)">
-                {{ f.format ? f.format((detail.submitted_data as any)?.[f.key]) : formatValue((detail.submitted_data as any)?.[f.key]) }}
-              </span>
-            </template>
-          </van-cell>
-        </van-cell-group>
-      </div>
-
-      <!-- 房型信息 -->
-      <div
-        v-if="(detail.submitted_data as any)?.room_types && (detail.submitted_data as any)?.room_types.length > 0"
-        class="bg-white m-3 rounded-xl overflow-hidden shadow-sm"
-      >
-        <div class="px-4 py-3 border-b border-gray-100 font-bold text-sm">房型信息</div>
-        <div
-          v-for="(room, idx) in (detail.submitted_data as any)?.room_types"
-          :key="idx"
-          class="p-3 border-b border-gray-100 last:border-b-0"
-        >
-          <div class="text-sm font-bold mb-2">房型 {{ (idx as number) + 1 }}：{{ room.name || '-' }}</div>
-          <div class="space-y-1 text-xs">
-            <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
-              <span class="text-gray-500">布局：</span>{{ mapDict(room.layout_type_label || room.layout_type, layoutTypeMap) }}
-            </div>
-            <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
-              <span class="text-gray-500">窗户：</span>{{ mapDict(room.window_type_label || room.window_type, windowTypeMap) }}
-            </div>
-            <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
-              <span class="text-gray-500">楼层：</span>{{ room.floor ?? '-' }}
-            </div>
-            <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
-              <span class="text-gray-500">设施：</span>{{ mapFacilities(room.facilities) }}
-            </div>
-            <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
-              <div class="text-gray-500 mb-1">租金方案：</div>
-              <div
-                v-for="(plan, pidx) in room.rental_plans"
-                :key="pidx"
-                class="pl-2 mb-2 pb-2 border-b border-gray-100 last:border-b-0"
+        <!-- 双栏对比区 -->
+        <div class="audit-compare">
+          <!-- 提交数据详情 -->
+          <div class="bg-white m-3 rounded-xl overflow-hidden shadow-sm audit-section">
+            <div class="px-4 py-3 border-b border-gray-100 font-bold text-sm">提交信息</div>
+            <van-cell-group :border="false">
+              <van-cell
+                v-for="f in baseFields"
+                :key="f.key"
+                :title="f.label"
+                :class="isChangedField(f.key) ? 'changed-field' : ''"
               >
-                <div><span class="text-gray-500">租期：</span>{{ mapDict(plan.lease_term_label || plan.lease_term, leaseTermMap) }}</div>
-                <div><span class="text-gray-500">月租金：</span>{{ plan.monthly_rent }} 元</div>
-                <div><span class="text-gray-500">支付方式：</span>{{ mapDict(plan.payment_method_label || plan.payment_method, paymentMethodMap) }}</div>
+                <template #value>
+                  <span :class="fieldClass(f.key)">
+                    {{ f.format ? f.format((detail.submitted_data as any)?.[f.key]) : formatValue((detail.submitted_data as any)?.[f.key]) }}
+                  </span>
+                </template>
+              </van-cell>
+            </van-cell-group>
+          </div>
+
+          <!-- 房型信息 -->
+          <div
+            v-if="(detail.submitted_data as any)?.room_types && (detail.submitted_data as any)?.room_types.length > 0"
+            class="bg-white m-3 rounded-xl overflow-hidden shadow-sm audit-section"
+          >
+            <div class="px-4 py-3 border-b border-gray-100 font-bold text-sm">房型信息</div>
+            <div
+              v-for="(room, idx) in (detail.submitted_data as any)?.room_types"
+              :key="idx"
+              class="p-3 border-b border-gray-100 last:border-b-0"
+            >
+              <div class="text-sm font-bold mb-2">房型 {{ (idx as number) + 1 }}：{{ room.name || '-' }}</div>
+              <div class="space-y-1 text-xs">
+                <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
+                  <span class="text-gray-500">布局：</span>{{ mapDict(room.layout_type_label || room.layout_type, layoutTypeMap) }}
+                </div>
+                <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
+                  <span class="text-gray-500">窗户：</span>{{ mapDict(room.window_type_label || room.window_type, windowTypeMap) }}
+                </div>
+                <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
+                  <span class="text-gray-500">楼层：</span>{{ room.floor ?? '-' }}
+                </div>
+                <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
+                  <span class="text-gray-500">设施：</span>{{ mapFacilities(room.facilities) }}
+                </div>
+                <div :class="isChangedField('room_types') ? 'text-danger font-bold' : 'text-gray-700'">
+                  <div class="text-gray-500 mb-1">租金方案：</div>
+                  <div
+                    v-for="(plan, pidx) in room.rental_plans"
+                    :key="pidx"
+                    class="pl-2 mb-2 pb-2 border-b border-gray-100 last:border-b-0"
+                  >
+                    <div><span class="text-gray-500">租期：</span>{{ mapDict(plan.lease_term_label || plan.lease_term, leaseTermMap) }}</div>
+                    <div><span class="text-gray-500">月租金：</span>{{ plan.monthly_rent }} 元</div>
+                    <div><span class="text-gray-500">支付方式：</span>{{ mapDict(plan.payment_method_label || plan.payment_method, paymentMethodMap) }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -317,6 +322,42 @@ onMounted(() => {
 .audit-detail-page {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.audit-compare {
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-section {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .audit-compare {
+    flex-direction: row;
+    gap: 0;
+  }
+
+  .audit-section {
+    margin-left: 12px !important;
+    margin-right: 12px !important;
+  }
+
+  .detail-container {
+    padding: 0 12px;
+  }
+
+  .detail-container > .bg-white:first-child {
+    margin-left: 12px !important;
+    margin-right: 12px !important;
+  }
 }
 
 .text-danger {

@@ -197,7 +197,7 @@ onMounted(() => {
             <van-empty v-if="publishedList.length === 0 && !publishedLoading" description="暂无已上架房源" />
 
             <!-- 房源卡片列表 -->
-            <div v-else class="p-3 space-y-3">
+            <div v-else class="apartment-card-list p-3">
               <div
                 v-for="item in publishedList"
                 :key="item.id"
@@ -264,7 +264,7 @@ onMounted(() => {
             <van-empty v-if="auditList.length === 0 && !auditLoading" description="暂无审核中的房源" />
 
             <!-- 审核单卡片列表 -->
-            <div v-else class="p-3 space-y-3">
+            <div v-else class="apartment-card-list p-3">
               <div
                 v-for="item in auditList"
                 :key="item.id"
@@ -307,6 +307,30 @@ onMounted(() => {
 .my-apartments-page {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.apartment-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .apartment-card-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px 24px !important;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .apartment-card-list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
 }
 
 .text-danger {

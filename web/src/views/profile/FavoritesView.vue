@@ -90,15 +90,15 @@ onMounted(() => {
           <van-empty description="暂无收藏" />
         </div>
 
-        <div class="px-3 py-2 space-y-3">
+        <div class="favorites-grid px-3 py-2">
           <div
             v-for="item in list"
             :key="item.id"
-            class="bg-white rounded-xl overflow-hidden shadow-sm relative"
+            class="favorite-card bg-white rounded-xl overflow-hidden shadow-sm relative"
             @click="goDetail(item.apartment_id)"
           >
             <!-- 封面图 -->
-            <div class="relative h-44 bg-gray-100">
+            <div class="card-cover bg-gray-100">
               <van-image
                 :src="item.cover_image"
                 fit="cover"
@@ -141,6 +141,51 @@ onMounted(() => {
 .favorites-page {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.favorites-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.favorite-card {
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.favorite-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-cover {
+  height: 176px;
+}
+
+@media (min-width: 768px) {
+  .favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px 24px !important;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .card-cover {
+    height: 200px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .favorites-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .card-cover {
+    height: 220px;
+  }
 }
 
 .empty-state {
