@@ -3,6 +3,7 @@
 """
 import copy
 import logging
+from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
@@ -20,7 +21,7 @@ from apps.apartments.serializers import (
     MerchantApartmentListSerializer,
     RoomTypeDetailSerializer,
 )
-from apps.apartments.utils import backfill_apartment_min_rent
+from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
 from apps.audits.models import AuditRecord
 from core.exceptions import BusinessException, NotFoundException, GoneException
 from core.pagination import StandardPagination
@@ -172,9 +173,11 @@ def apartment_detail(request, id):
     if apartment.status != 'published' or apartment.deleted_at is not None:
         raise GoneException('房源已下架，您可以在收藏列表中取消收藏')
 
-    # 自动回填 min_monthly_rent（防御性修复历史脏数据）
+    # 自动回填 min_monthly_rent / min_area（防御性修复历史脏数据）
     if apartment.min_monthly_rent is None:
         backfill_apartment_min_rent(apartment)
+    if apartment.min_area is None:
+        backfill_apartment_min_area(apartment)
 
     serializer = ApartmentDetailSerializer(apartment, context={'request': request})
     return unified_response(data=serializer.data)
@@ -279,10 +282,19 @@ def create_apartment(request):
             contact_phone=data['contact_phone'],
             status='pending_first_review',
             min_monthly_rent=None,
+            longitude=data.get('longitude'),
+            latitude=data.get('latitude'),
+            property_fee=data.get('property_fee'),
+            water_fee=data.get('water_fee') or None,
+            electric_fee=data.get('electric_fee') or None,
+            service_fee=data.get('service_fee'),
+            other_fees=data.get('other_fees', ''),
+            min_area=None,
         )
 
-        # 2. 创建房型与租金方案，计算最低月租金
+        # 2. 创建房型与租金方案，计算最低月租金和最小面积
         global_min_rent = None
+        global_min_area = None
         for rt_data in data['room_types']:
             room_type = RoomType.objects.create(
                 apartment=apartment,
@@ -293,7 +305,15 @@ def create_apartment(request):
                 window_type=rt_data['window_type'],
                 floor=rt_data['floor'],
                 sort=rt_data.get('sort', 0),
+                area=rt_data.get('area'),
+                orientation=rt_data.get('orientation') or None,
+                available_date=rt_data.get('available_date'),
             )
+
+            room_area = rt_data.get('area')
+            if room_area is not None:
+                if global_min_area is None or room_area < global_min_area:
+                    global_min_area = room_area
 
             for rp_data in rt_data['rental_plans']:
                 RentalPlan.objects.create(
@@ -305,10 +325,16 @@ def create_apartment(request):
                 if global_min_rent is None or rp_data['monthly_rent'] < global_min_rent:
                     global_min_rent = rp_data['monthly_rent']
 
-        # 3. 更新公寓最低月租金缓存
+        # 3. 更新公寓最低月租金缓存和最小面积缓存
+        update_fields = []
         if global_min_rent is not None:
             apartment.min_monthly_rent = global_min_rent
-            apartment.save(update_fields=['min_monthly_rent'])
+            update_fields.append('min_monthly_rent')
+        if global_min_area is not None:
+            apartment.min_area = global_min_area
+            update_fields.append('min_area')
+        if update_fields:
+            apartment.save(update_fields=update_fields)
 
         # 4. 构建房源快照 JSON
         submitted_data = _build_apartment_snapshot(apartment)
@@ -383,6 +409,9 @@ def _build_apartment_snapshot(apartment):
             'window_type': rt.window_type,
             'floor': rt.floor,
             'sort': rt.sort,
+            'area': float(rt.area) if rt.area is not None else None,
+            'orientation': rt.orientation,
+            'available_date': rt.available_date.isoformat() if rt.available_date else None,
             'rental_plans': plans,
         })
 
@@ -394,6 +423,13 @@ def _build_apartment_snapshot(apartment):
         'street_id': apartment.street_id,
         'detail_address': apartment.detail_address,
         'contact_phone': apartment.contact_phone,
+        'longitude': float(apartment.longitude) if apartment.longitude is not None else None,
+        'latitude': float(apartment.latitude) if apartment.latitude is not None else None,
+        'property_fee': apartment.property_fee,
+        'water_fee': apartment.water_fee,
+        'electric_fee': apartment.electric_fee,
+        'service_fee': apartment.service_fee,
+        'other_fees': apartment.other_fees,
         'room_types': room_types_data,
     }
 
@@ -473,6 +509,10 @@ def merchant_apartment_update(request, id):
             # 生成变更审核单，原房源保持 published
             submitted_data = copy.deepcopy(original_data)
             # 将变更应用到 submitted_data 中
+            NEW_APARTMENT_FIELDS = [
+                'longitude', 'latitude', 'property_fee', 'water_fee',
+                'electric_fee', 'service_fee', 'other_fees',
+            ]
             for field in data:
                 if field == 'room_types':
                     submitted_data['room_types'] = _build_room_types_from_data(data['room_types'])
@@ -484,6 +524,9 @@ def merchant_apartment_update(request, id):
                     submitted_data['description'] = data[field]
                 elif field == 'contact_phone':
                     submitted_data['contact_phone'] = data[field]
+                elif field in NEW_APARTMENT_FIELDS:
+                    val = data[field]
+                    submitted_data[field] = float(val) if isinstance(val, Decimal) else val
 
             changed_fields = [f for f in KEY_FIELDS if f in data and getattr(apartment, f) != data[f]]
 
@@ -520,6 +563,14 @@ def merchant_apartment_update(request, id):
             if 'detail_address' in data:
                 apartment.detail_address = data['detail_address']
 
+            NEW_DIRECT_FIELDS = [
+                'longitude', 'latitude', 'property_fee', 'water_fee',
+                'electric_fee', 'service_fee', 'other_fees',
+            ]
+            for field in NEW_DIRECT_FIELDS:
+                if field in data:
+                    setattr(apartment, field, data[field])
+
             apartment.save()
 
             # 若传了房型数据，全量替换
@@ -529,6 +580,7 @@ def merchant_apartment_update(request, id):
                     rt.delete()
 
                 global_min_rent = None
+                global_min_area = None
                 for rt_data in data['room_types']:
                     room_type = RoomType.objects.create(
                         apartment=apartment,
@@ -539,7 +591,15 @@ def merchant_apartment_update(request, id):
                         window_type=rt_data['window_type'],
                         floor=rt_data['floor'],
                         sort=rt_data.get('sort', 0),
+                        area=rt_data.get('area'),
+                        orientation=rt_data.get('orientation') or None,
+                        available_date=rt_data.get('available_date'),
                     )
+                    room_area = rt_data.get('area')
+                    if room_area is not None:
+                        if global_min_area is None or room_area < global_min_area:
+                            global_min_area = room_area
+
                     for rp_data in rt_data['rental_plans']:
                         RentalPlan.objects.create(
                             room_type=room_type,
@@ -550,9 +610,15 @@ def merchant_apartment_update(request, id):
                         if global_min_rent is None or rp_data['monthly_rent'] < global_min_rent:
                             global_min_rent = rp_data['monthly_rent']
 
+                update_fields = []
                 if global_min_rent is not None:
                     apartment.min_monthly_rent = global_min_rent
-                    apartment.save(update_fields=['min_monthly_rent'])
+                    update_fields.append('min_monthly_rent')
+                if global_min_area is not None:
+                    apartment.min_area = global_min_area
+                    update_fields.append('min_area')
+                if update_fields:
+                    apartment.save(update_fields=update_fields)
 
             logger.info(f'[UpdateApartment] direct update, '
                         f'landlord={landlord.id}, apartment={apartment.id}')
@@ -626,6 +692,9 @@ def _build_room_types_from_data(room_types_data):
             'window_type': rt_data['window_type'],
             'floor': rt_data['floor'],
             'sort': rt_data.get('sort', 0),
+            'area': float(rt_data['area']) if rt_data.get('area') is not None else None,
+            'orientation': rt_data.get('orientation') or None,
+            'available_date': rt_data['available_date'].isoformat() if rt_data.get('available_date') else None,
             'rental_plans': plans,
         })
     return result
