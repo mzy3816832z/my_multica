@@ -588,7 +588,9 @@ class ApartmentDetailSerializer(serializers.Serializer):
     latitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='纬度', allow_null=True)
     property_fee = serializers.IntegerField(help_text='物业费（元/月）', allow_null=True)
     water_fee = serializers.CharField(max_length=30, help_text='水费编码', allow_null=True)
+    water_fee_label = serializers.SerializerMethodField(help_text='水费展示标签')
     electric_fee = serializers.CharField(max_length=30, help_text='电费编码', allow_null=True)
+    electric_fee_label = serializers.SerializerMethodField(help_text='电费展示标签')
     service_fee = serializers.IntegerField(help_text='服务费（元/月）', allow_null=True)
     other_fees = serializers.CharField(max_length=100, help_text='其他费用说明', allow_blank=True)
     min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
@@ -608,6 +610,12 @@ class ApartmentDetailSerializer(serializers.Serializer):
             return False
         from apps.favorites.models import Favorite
         return Favorite.objects.filter(user=request.user, apartment=obj).exists()
+
+    def get_water_fee_label(self, obj):
+        return get_dict_label('fee_type', obj.water_fee)
+
+    def get_electric_fee_label(self, obj):
+        return get_dict_label('fee_type', obj.electric_fee)
 
     def get_room_types(self, obj):
         room_types = obj.room_types.all().order_by('sort', 'id')

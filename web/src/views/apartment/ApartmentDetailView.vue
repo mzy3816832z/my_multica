@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { getApartmentDetail } from '@/api/apartment'
 import { addFavorite, removeFavorite } from '@/api/favorite'
 import type { Apartment } from '@/types'
+import FeeDetailCard from '@/components/business/FeeDetailCard.vue'
+import FacilityGroup from '@/components/business/FacilityGroup.vue'
+import PhoneActionSheet from '@/components/business/PhoneActionSheet.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +19,18 @@ const apartmentId = ref(Number(route.params.id))
 const apartment = ref<Apartment | null>(null)
 const loading = ref(false)
 const isOffline = ref(false)
+const phoneSheetVisible = ref(false)
+
+const allFacilities = computed<string[]>(() => {
+  if (!apartment.value?.room_types) return []
+  const set = new Set<string>()
+  for (const room of apartment.value.room_types) {
+    for (const f of room.facilities) {
+      set.add(f)
+    }
+  }
+  return Array.from(set)
+})
 
 async function fetchDetail() {
   if (!apartmentId.value || isNaN(apartmentId.value)) {
@@ -74,6 +89,14 @@ function goBack() {
 
 function goFavorites() {
   router.push('/profile/favorites')
+}
+
+function showPhoneSheet() {
+  phoneSheetVisible.value = true
+}
+
+function hidePhoneSheet() {
+  phoneSheetVisible.value = false
 }
 
 watch(() => route.params.id, (newId) => {
@@ -155,7 +178,7 @@ onMounted(() => {
             {{ apartment?.district_name || '' }} {{ apartment?.street_name || '' }} {{ apartment?.detail_address || '' }}
           </span>
         </div>
-        <div class="flex items-center mt-1 text-sm text-gray-500">
+        <div class="flex items-center mt-1 text-sm" :class="apartment?.contact_phone ? 'text-primary cursor-pointer' : 'text-gray-500'" @click="apartment?.contact_phone ? showPhoneSheet() : undefined">
           <van-icon name="phone-o" class="mr-1" />
           <span>{{ apartment?.contact_phone || '暂无电话' }}</span>
         </div>
@@ -220,8 +243,20 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- 费用明细卡片 -->
+      <FeeDetailCard :apartment="apartment" />
+
+      <!-- 配套设施分组 -->
+      <FacilityGroup :facilities="allFacilities" />
+
       <!-- 底部占位（安全区） -->
       <div class="h-6" />
+
+      <!-- 电话动作面板 -->
+      <PhoneActionSheet
+        v-model:visible="phoneSheetVisible"
+        :phone="apartment?.contact_phone || ''"
+      />
     </template>
   </div>
 </template>

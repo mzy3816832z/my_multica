@@ -76,6 +76,21 @@ export const auditStatusMap: Record<string, string> = {
   rejected: '已驳回',
 }
 
+// 费用类型映射（水电口径）
+export const feeTypeMap: Record<string, string> = {
+  civilian: '民水民电',
+  commercial: '商水商电',
+  metered: '按表计费',
+}
+
+// 设施分组映射
+export const facilityGroupMap: Record<string, string> = {
+  basic: '基础设施',
+  bathroom: '卫浴',
+  kitchen: '厨房',
+  public: '公共',
+}
+
 // 通用映射查找函数
 export function mapDict(
   value: string | undefined,

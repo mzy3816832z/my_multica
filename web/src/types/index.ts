@@ -79,6 +79,15 @@ export interface Apartment {
   contact_phone?: string
   status?: string
   min_monthly_rent?: number
+  property_fee?: number | null
+  water_fee?: string | null
+  water_fee_label?: string | null
+  electric_fee?: string | null
+  electric_fee_label?: string | null
+  service_fee?: number | null
+  other_fees?: string
+  min_area?: number | null
+  verified?: boolean
   created_at?: number
   updated_at?: number
   is_favorite?: boolean

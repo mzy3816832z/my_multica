@@ -176,6 +176,17 @@ SYSTEM_DICTS = [
     {'category': 'window_orientation', 'code': 'southwest', 'label': '西南', 'sort': 6},
     {'category': 'window_orientation', 'code': 'northeast', 'label': '东北', 'sort': 7},
     {'category': 'window_orientation', 'code': 'northwest', 'label': '西北', 'sort': 8},
+
+    # 费用类型（水电口径）
+    {'category': 'fee_type', 'code': 'civilian', 'label': '民水民电', 'sort': 1},
+    {'category': 'fee_type', 'code': 'commercial', 'label': '商水商电', 'sort': 2},
+    {'category': 'fee_type', 'code': 'metered', 'label': '按表计费', 'sort': 3},
+
+    # 设施分组
+    {'category': 'facility_group', 'code': 'basic', 'label': '基础设施', 'sort': 1},
+    {'category': 'facility_group', 'code': 'bathroom', 'label': '卫浴', 'sort': 2},
+    {'category': 'facility_group', 'code': 'kitchen', 'label': '厨房', 'sort': 3},
+    {'category': 'facility_group', 'code': 'public', 'label': '公共', 'sort': 4},
 ]
 
 

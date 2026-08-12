@@ -13,8 +13,12 @@ declare module 'vue' {
   export interface GlobalComponents {
     DictSelect: typeof import('./components/DictSelect.vue')['default']
     DistrictCascader: typeof import('./components/DistrictCascader.vue')['default']
+    FacilityGroup: typeof import('./components/business/FacilityGroup.vue')['default']
+    FeeDetailCard: typeof import('./components/business/FeeDetailCard.vue')['default']
+    PhoneActionSheet: typeof import('./components/business/PhoneActionSheet.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    VanActionSheet: typeof import('vant/es')['ActionSheet']
     VanBadge: typeof import('vant/es')['Badge']
     VanButton: typeof import('vant/es')['Button']
     VanCell: typeof import('vant/es')['Cell']
