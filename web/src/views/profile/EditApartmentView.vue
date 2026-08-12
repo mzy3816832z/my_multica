@@ -137,7 +137,8 @@ onMounted(() => {
     </div>
 
     <!-- 表单内容 -->
-    <div v-else class="p-4 space-y-4">
+    <div v-else class="form-container">
+      <div class="p-4 space-y-4">
       <!-- 公寓名称 -->
       <div class="bg-white rounded-xl p-4">
         <div class="text-sm font-bold text-gray-900 mb-2">公寓名称 <span class="text-danger">*</span></div>
@@ -267,6 +268,7 @@ onMounted(() => {
         <van-button type="primary" block round :disabled="!canSubmit" @click="onSubmit">
           保存修改
         </van-button>
+      </div>
       </div>
     </div>
 
@@ -428,6 +430,18 @@ onMounted(() => {
 .edit-apartment-page {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.form-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .form-container {
+    padding: 16px 24px;
+  }
 }
 
 .text-danger {

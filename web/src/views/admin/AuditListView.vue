@@ -196,7 +196,7 @@ onMounted(() => {
             <van-empty v-if="list.length === 0 && !loading" description="暂无审核记录" />
 
             <!-- 审核卡片列表 -->
-            <div v-else class="p-3 space-y-3">
+            <div v-else class="audit-card-list p-3">
               <div
                 v-for="item in list"
                 :key="item.id"
@@ -282,6 +282,30 @@ onMounted(() => {
 .audit-list-page {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.audit-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .audit-card-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px 24px !important;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .audit-card-list {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
 }
 
 .text-danger {

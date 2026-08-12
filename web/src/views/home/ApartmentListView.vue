@@ -387,15 +387,15 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="px-3 py-2 space-y-3">
+        <div class="apartment-grid px-3 py-2">
           <div
             v-for="item in list"
             :key="item.id"
-            class="flex bg-white rounded-xl overflow-hidden shadow-sm"
+            class="apartment-card bg-white rounded-xl overflow-hidden shadow-sm"
             @click="goDetail(item.id)"
           >
-            <!-- 左侧图片 -->
-            <div class="w-28 h-28 flex-shrink-0 bg-gray-100">
+            <!-- 图片 -->
+            <div class="card-image bg-gray-100">
               <van-image
                 :src="item.cover_image"
                 fit="cover"
@@ -403,8 +403,8 @@ onMounted(() => {
                 :alt="item.name"
               />
             </div>
-            <!-- 右侧信息 -->
-            <div class="flex-1 p-3 flex flex-col justify-between min-w-0">
+            <!-- 信息 -->
+            <div class="card-info flex flex-col justify-between min-w-0">
               <div>
                 <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.name }}</h3>
                 <p class="text-sm text-gray-500 mt-1 flex items-center">
@@ -617,6 +617,68 @@ onMounted(() => {
 .apartment-list {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.apartment-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apartment-card {
+  display: flex;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.apartment-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.card-image {
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+}
+
+.card-info {
+  flex: 1;
+  padding: 12px;
+}
+
+@media (min-width: 768px) {
+  .apartment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px 24px;
+  }
+
+  .apartment-card {
+    flex-direction: column;
+  }
+
+  .card-image {
+    width: 100%;
+    height: 180px;
+  }
+
+  .card-info {
+    padding: 14px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .apartment-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .card-image {
+    height: 200px;
+  }
 }
 
 .line-clamp-1 {
