@@ -85,6 +85,10 @@ async function onSubmit() {
       <!-- 总览图上传 -->
       <div class="bg-white rounded-xl p-4">
         <div class="text-sm font-bold text-gray-900 mb-2">公寓总览图 <span class="text-danger">*</span></div>
+        <div class="text-xs text-orange-500 mb-2 flex items-center gap-1">
+          <van-icon name="warning-o" />
+          <span>请上传实拍图，过度美化或网图将被驳回</span>
+        </div>
         <div v-if="form.cover_image" class="relative w-full h-44 rounded-lg overflow-hidden">
           <van-image :src="form.cover_image" fit="cover" class="w-full h-full" />
           <div class="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center" @click="removeCover">
@@ -228,6 +232,10 @@ async function onSubmit() {
             <div class="text-sm font-bold text-gray-900 mb-2">
               房型图片 <span class="text-danger">*</span>
               <span class="text-xs text-gray-400 font-normal">（最多 5 张）</span>
+            </div>
+            <div class="text-xs text-orange-500 mb-2 flex items-center gap-1">
+              <van-icon name="warning-o" />
+              <span>请上传实拍图，过度美化或网图将被驳回</span>
             </div>
             <div class="flex flex-wrap gap-2">
               <div

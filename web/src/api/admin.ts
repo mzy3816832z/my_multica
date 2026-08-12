@@ -17,10 +17,14 @@ export function getAdminAuditDetail(id: number): Promise<AuditRecord> {
   return request.get(`/admin/audits/${id}/`)
 }
 
-export function approveAudit(id: number): Promise<void> {
-  return request.post(`/admin/audits/${id}/approve/`)
+export function approveAudit(id: number, verified?: boolean): Promise<void> {
+  return request.post(`/admin/audits/${id}/approve/`, { verified: verified ?? false })
 }
 
 export function rejectAudit(id: number, reason: string): Promise<void> {
   return request.post(`/admin/audits/${id}/reject/`, { reject_reason: reason })
+}
+
+export function verifyApartment(id: number, verified: boolean): Promise<{ apartment_id: number; verified: boolean }> {
+  return request.put(`/admin/apartments/${id}/verify/`, { verified })
 }

@@ -406,7 +406,10 @@ onMounted(() => {
             <!-- 信息 -->
             <div class="card-info flex flex-col justify-between min-w-0">
               <div>
-                <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.name }}</h3>
+                <div class="flex items-center gap-1">
+                  <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.name }}</h3>
+                  <van-tag v-if="item.verified" type="success" size="medium" class="text-xs flex-shrink-0">平台核验</van-tag>
+                </div>
                 <p class="text-sm text-gray-500 mt-1 flex items-center">
                   <van-icon name="location-o" class="mr-1" />
                   {{ item.district_name || '' }} {{ item.street_name || '' }}

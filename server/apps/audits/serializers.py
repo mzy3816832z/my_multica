@@ -96,8 +96,16 @@ class AuditDetailSerializer(serializers.Serializer):
 
 
 class AuditApproveSerializer(serializers.Serializer):
-    """审核通过请求序列化器（无额外字段，仅用于文档）"""
-    pass
+    """审核通过请求序列化器"""
+    verified = serializers.BooleanField(
+        default=False,
+        help_text='是否核验房源（设置 verified 标识）',
+    )
+
+
+class ApartmentVerifySerializer(serializers.Serializer):
+    """房源核验请求序列化器"""
+    verified = serializers.BooleanField(help_text='是否核验')
 
 
 class AuditRejectSerializer(serializers.Serializer):

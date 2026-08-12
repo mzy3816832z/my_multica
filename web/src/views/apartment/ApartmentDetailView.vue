@@ -163,7 +163,10 @@ onMounted(() => {
 
         <div class="detail-info">
           <div class="bg-white p-4">
-            <h1 class="text-lg font-bold text-gray-900">{{ apartment?.name }}</h1>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold text-gray-900">{{ apartment?.name }}</h1>
+              <van-tag v-if="apartment?.verified" type="success" size="medium">平台核验</van-tag>
+            </div>
             <div class="flex items-center mt-2 text-sm text-gray-500">
               <van-icon name="location-o" class="mr-1" />
               <span>
@@ -181,6 +184,21 @@ onMounted(() => {
               <span v-if="apartment?.min_monthly_rent != null" class="text-danger text-xl font-bold">¥{{ apartment.min_monthly_rent }}</span>
               <span v-else class="text-sm text-gray-400">暂无报价</span>
               <span v-if="apartment?.min_monthly_rent != null" class="text-sm text-gray-500 ml-1">/月起</span>
+            </div>
+          </div>
+
+          <div v-if="apartment?.landlord_info" class="mt-3 bg-white p-4">
+            <h2 class="text-base font-bold text-gray-900 mb-2">商家信息</h2>
+            <div class="flex items-center gap-4 text-sm text-gray-600">
+              <div class="flex items-center gap-1">
+                <van-icon name="phone-o" />
+                <span>{{ apartment.landlord_info.verified_phone ? '已验证手机号' : '手机号未验证' }}</span>
+                <van-tag v-if="apartment.landlord_info.verified_phone" type="success" class="ml-1 text-xs">已认证</van-tag>
+              </div>
+              <div class="flex items-center gap-1">
+                <van-icon name="home-o" />
+                <span>在架房源 {{ apartment.landlord_info.active_listing_count }} 套</span>
+              </div>
             </div>
           </div>
 

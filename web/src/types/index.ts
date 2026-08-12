@@ -66,6 +66,11 @@ export interface District {
 }
 
 // 房源列表项 / 详情
+export interface LandlordInfo {
+  verified_phone: boolean
+  active_listing_count: number
+}
+
 export interface Apartment {
   id: number
   name: string
@@ -88,6 +93,7 @@ export interface Apartment {
   other_fees?: string
   min_area?: number | null
   verified?: boolean
+  landlord_info?: LandlordInfo
   created_at?: number
   updated_at?: number
   is_favorite?: boolean
