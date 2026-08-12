@@ -61,6 +61,59 @@ class Apartment(BaseModel):
         blank=True,
         verbose_name='最低月租金（缓存）',
     )
+    longitude = models.DecimalField(
+        max_digits=10,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name='经度',
+    )
+    latitude = models.DecimalField(
+        max_digits=10,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name='纬度',
+    )
+    property_fee = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='物业费（元/月）',
+    )
+    water_fee = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+        verbose_name='水费编码',
+    )
+    electric_fee = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+        verbose_name='电费编码',
+    )
+    service_fee = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='服务费（元/月）',
+    )
+    other_fees = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='其他费用说明',
+    )
+    min_area = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        verbose_name='最小面积（缓存）',
+    )
+    verified = models.BooleanField(
+        default=False,
+        verbose_name='是否认证',
+    )
 
     objects = SoftDeleteManager()
     all_objects = AllObjectsManager()
@@ -74,6 +127,8 @@ class Apartment(BaseModel):
             models.Index(fields=['status', 'deleted_at']),
             models.Index(fields=['district', 'deleted_at']),
             models.Index(fields=['min_monthly_rent']),
+            models.Index(fields=['min_area']),
+            models.Index(fields=['verified']),
         ]
 
     def __str__(self):
@@ -113,6 +168,24 @@ class RoomType(BaseModel):
     sort = models.IntegerField(
         default=0,
         verbose_name='展示排序',
+    )
+    area = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        verbose_name='面积（㎡）',
+    )
+    orientation = models.CharField(
+        max_length=30,
+        null=True,
+        blank=True,
+        verbose_name='朝向编码',
+    )
+    available_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='可入住日期',
     )
 
     objects = SoftDeleteManager()
