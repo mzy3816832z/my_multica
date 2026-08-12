@@ -153,3 +153,10 @@ export interface MerchantAuditItem {
 export interface MerchantApartmentDetail extends Apartment {
   room_types: RoomType[]
 }
+
+// 热门区域
+export interface HotDistrict {
+  district_id: number
+  name: string
+  count: number
+}
