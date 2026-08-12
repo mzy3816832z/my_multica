@@ -119,6 +119,7 @@ export interface Message {
   title: string
   content: string
   related_apartment_id: number
+  related_apartment_name?: string | null
   related_audit_id?: number
   is_read: boolean
   created_at: number
@@ -158,4 +159,11 @@ export interface MerchantAuditItem {
 // 商家房源详情（含房型）
 export interface MerchantApartmentDetail extends Apartment {
   room_types: RoomType[]
+}
+
+// 热门区域
+export interface HotDistrict {
+  district_id: number
+  name: string
+  count: number
 }
