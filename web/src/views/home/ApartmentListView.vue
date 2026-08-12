@@ -2,10 +2,10 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getApartments } from '@/api/apartment'
+import { getApartments, getHotDistricts } from '@/api/apartment'
 import { getDistricts } from '@/api/dict'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment, District, DictItem } from '@/types'
+import type { Apartment, District, DictItem, HotDistrict } from '@/types'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -22,6 +22,67 @@ const refreshing = ref(false)
 // ================= 搜索 =================
 const keyword = ref('')
 const showSearch = ref(false)
+
+// 搜索历史（localStorage，最多10条）
+const SEARCH_HISTORY_KEY = 'apt_search_history'
+const MAX_HISTORY = 10
+
+interface SearchHistoryItem {
+  keyword: string
+  timestamp: number
+}
+
+function loadSearchHistory(): SearchHistoryItem[] {
+  try {
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as SearchHistoryItem[]
+  } catch {
+    return []
+  }
+}
+
+const searchHistory = ref<SearchHistoryItem[]>(loadSearchHistory())
+
+function saveSearchHistory(kw: string) {
+  if (!kw.trim()) return
+  const history = searchHistory.value.filter(h => h.keyword !== kw.trim())
+  history.unshift({ keyword: kw.trim(), timestamp: Date.now() })
+  if (history.length > MAX_HISTORY) history.splice(MAX_HISTORY)
+  searchHistory.value = history
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history))
+}
+
+function removeSearchHistory(index: number) {
+  searchHistory.value.splice(index, 1)
+  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory.value))
+}
+
+function clearSearchHistory() {
+  searchHistory.value = []
+  localStorage.removeItem(SEARCH_HISTORY_KEY)
+}
+
+function onHistoryClick(kw: string) {
+  keyword.value = kw
+  onSearch()
+}
+
+// 热门区域
+const hotDistricts = ref<HotDistrict[]>([])
+const hotDistrictsLoading = ref(false)
+
+async function fetchHotDistricts() {
+  hotDistrictsLoading.value = true
+  try {
+    const data = await getHotDistricts()
+    hotDistricts.value = data
+  } catch {
+    hotDistricts.value = []
+  } finally {
+    hotDistrictsLoading.value = false
+  }
+}
 
 // ================= 筛选 =================
 const showFilter = ref(false)
@@ -156,6 +217,7 @@ function onRefresh() {
 }
 
 function onSearch() {
+  saveSearchHistory(keyword.value)
   showSearch.value = false
   onRefresh()
 }
@@ -233,6 +295,7 @@ async function toggleFavorite(apartment: Apartment, event: Event) {
 // ================= 初始化 =================
 onMounted(() => {
   loadDistricts()
+  fetchHotDistricts()
   fetchList(true)
 })
 </script>
@@ -244,7 +307,7 @@ onMounted(() => {
       <div class="flex items-center px-3 py-2 gap-2">
         <div
           class="flex-1 flex items-center bg-gray-100 rounded-full px-3 py-2"
-          @click="showSearch = true"
+          @click="showSearch = true; fetchHotDistricts()"
         >
           <van-icon name="search" class="text-gray-400 mr-2" />
           <span class="text-sm text-gray-400 flex-1">
@@ -274,6 +337,21 @@ onMounted(() => {
       >
         <div v-if="list.length === 0 && !loading" class="empty-state">
           <van-empty description="暂无房源" />
+          <div v-if="keyword || activeFilterCount > 0" class="px-4 text-center">
+            <p class="text-sm text-gray-400 mb-3">试试搜索行政区或街道名</p>
+            <div class="flex items-center gap-2 justify-center">
+              <van-tag
+                v-for="d in hotDistricts"
+                :key="d.district_id"
+                type="primary"
+                size="large"
+                round
+                @click="keyword = d.name; showSearch = false; onRefresh()"
+              >
+                {{ d.name }}
+              </van-tag>
+            </div>
+          </div>
         </div>
 
         <div class="px-3 py-2 space-y-3">
@@ -334,8 +412,9 @@ onMounted(() => {
       <div class="flex items-center px-3 py-2 border-b border-gray-100">
         <van-search
           v-model="keyword"
-          placeholder="搜索房源名称"
+          placeholder="搜索房源名称、地址或描述"
           show-action
+          maxlength="30"
           class="flex-1"
           @search="onSearch"
         >
@@ -345,8 +424,46 @@ onMounted(() => {
         </van-search>
         <span class="text-sm text-gray-500 ml-2" @click="showSearch = false">取消</span>
       </div>
-      <div class="p-4 text-sm text-gray-400">
-        输入关键词后点击搜索
+
+      <!-- 搜索历史 -->
+      <div v-if="searchHistory.length > 0" class="px-4 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-bold text-gray-900">搜索历史</span>
+          <van-icon name="delete-o" class="text-gray-400" @click="clearSearchHistory" />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="(item, index) in searchHistory"
+            :key="item.timestamp"
+            class="flex items-center bg-gray-100 rounded-full px-3 py-1"
+          >
+            <span class="text-sm text-gray-700" @click="onHistoryClick(item.keyword)">{{ item.keyword }}</span>
+            <van-icon
+              name="cross"
+              class="text-gray-400 ml-1 text-xs"
+              @click.stop="removeSearchHistory(index)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 热门区域 -->
+      <div class="px-4 pt-4">
+        <div class="text-sm font-bold text-gray-900 mb-3">热门区域</div>
+        <van-loading v-if="hotDistrictsLoading" size="20" class="py-2" />
+        <div v-else-if="hotDistricts.length === 0" class="text-sm text-gray-400 py-2">暂无热门区域</div>
+        <div v-else class="flex flex-wrap gap-2">
+          <van-tag
+            v-for="d in hotDistricts"
+            :key="d.district_id"
+            type="primary"
+            size="large"
+            round
+            @click="keyword = d.name; onSearch()"
+          >
+            {{ d.name }}
+          </van-tag>
+        </div>
       </div>
     </van-popup>
 

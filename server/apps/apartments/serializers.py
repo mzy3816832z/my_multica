@@ -54,6 +54,12 @@ VALID_FACILITIES = {
     'private_bathroom', 'balcony', 'kitchen', 'wifi',
     'tv', 'sofa', 'bed', 'desk', 'elevator', 'parking', 'gym',
 }
+VALID_ORIENTATIONS = {
+    'east', 'south', 'west', 'north',
+    'south_east', 'south_west', 'north_east', 'north_west',
+    'north_south',
+}
+VALID_FEE_TYPES = {'civilian', 'commercial', 'metered'}
 
 
 class RentalPlanSerializer(serializers.Serializer):
@@ -91,7 +97,31 @@ class RoomTypeSerializer(serializers.Serializer):
     window_type = serializers.CharField(max_length=30, help_text='内外窗编码')
     floor = serializers.IntegerField(min_value=1, help_text='楼层，必须≥1')
     sort = serializers.IntegerField(default=0, help_text='展示排序')
+    area = serializers.DecimalField(
+        max_digits=5, decimal_places=1,
+        required=False, allow_null=True,
+        help_text='面积（㎡），范围 0.5-500',
+    )
+    orientation = serializers.CharField(
+        max_length=30, required=False, allow_null=True, allow_blank=True,
+        help_text='朝向编码',
+    )
+    available_date = serializers.DateField(
+        required=False, allow_null=True,
+        help_text='可入住日期',
+    )
     rental_plans = RentalPlanSerializer(many=True, help_text='租期租金方案列表')
+
+    def validate_area(self, value):
+        if value is not None:
+            if value < 0.5 or value > 500:
+                raise serializers.ValidationError('面积范围 0.5-500 ㎡')
+        return value
+
+    def validate_orientation(self, value):
+        if value and value not in VALID_ORIENTATIONS:
+            raise serializers.ValidationError(f'无效的朝向: {value}')
+        return value
 
     def validate_images(self, value):
         """校验房型图片数量 ≤5 张"""
@@ -149,6 +179,36 @@ class ApartmentCreateSerializer(serializers.Serializer):
         help_text='联系电话（11 位手机号）',
         validators=[validate_phone],
     )
+    longitude = serializers.DecimalField(
+        max_digits=10, decimal_places=6,
+        required=False, allow_null=True,
+        help_text='经度',
+    )
+    latitude = serializers.DecimalField(
+        max_digits=10, decimal_places=6,
+        required=False, allow_null=True,
+        help_text='纬度',
+    )
+    property_fee = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0,
+        help_text='物业费（元/月）',
+    )
+    water_fee = serializers.CharField(
+        max_length=30, required=False, allow_null=True, allow_blank=True,
+        help_text='水费编码',
+    )
+    electric_fee = serializers.CharField(
+        max_length=30, required=False, allow_null=True, allow_blank=True,
+        help_text='电费编码',
+    )
+    service_fee = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0,
+        help_text='服务费（元/月）',
+    )
+    other_fees = serializers.CharField(
+        max_length=100, required=False, allow_blank=True, default='',
+        help_text='其他费用说明',
+    )
     room_types = RoomTypeSerializer(
         many=True,
         help_text='房型列表（至少 1 组）',
@@ -178,6 +238,14 @@ class ApartmentCreateSerializer(serializers.Serializer):
             District.objects.get(id=street_id, level=2, parent=district)
         except District.DoesNotExist:
             raise serializers.ValidationError({'street_id': '无效的街道/镇 ID，或不在该行政区内'})
+
+        # 校验水电费编码
+        water_fee = attrs.get('water_fee')
+        if water_fee and water_fee not in VALID_FEE_TYPES:
+            raise serializers.ValidationError({'water_fee': f'无效的水费编码: {water_fee}'})
+        electric_fee = attrs.get('electric_fee')
+        if electric_fee and electric_fee not in VALID_FEE_TYPES:
+            raise serializers.ValidationError({'electric_fee': f'无效的电费编码: {electric_fee}'})
 
         return attrs
 
@@ -209,6 +277,36 @@ class ApartmentUpdateSerializer(serializers.Serializer):
         required=False,
         help_text='联系电话（11 位手机号）',
         validators=[validate_phone],
+    )
+    longitude = serializers.DecimalField(
+        max_digits=10, decimal_places=6,
+        required=False, allow_null=True,
+        help_text='经度',
+    )
+    latitude = serializers.DecimalField(
+        max_digits=10, decimal_places=6,
+        required=False, allow_null=True,
+        help_text='纬度',
+    )
+    property_fee = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0,
+        help_text='物业费（元/月）',
+    )
+    water_fee = serializers.CharField(
+        max_length=30, required=False, allow_null=True, allow_blank=True,
+        help_text='水费编码',
+    )
+    electric_fee = serializers.CharField(
+        max_length=30, required=False, allow_null=True, allow_blank=True,
+        help_text='电费编码',
+    )
+    service_fee = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0,
+        help_text='服务费（元/月）',
+    )
+    other_fees = serializers.CharField(
+        max_length=100, required=False, allow_blank=True,
+        help_text='其他费用说明',
     )
     room_types = RoomTypeSerializer(
         many=True,
@@ -246,6 +344,14 @@ class ApartmentUpdateSerializer(serializers.Serializer):
             except District.DoesNotExist:
                 raise serializers.ValidationError({'district_id': '无效的行政区 ID'})
 
+        # 校验水电费编码
+        water_fee = attrs.get('water_fee')
+        if water_fee and water_fee not in VALID_FEE_TYPES:
+            raise serializers.ValidationError({'water_fee': f'无效的水费编码: {water_fee}'})
+        electric_fee = attrs.get('electric_fee')
+        if electric_fee and electric_fee not in VALID_FEE_TYPES:
+            raise serializers.ValidationError({'electric_fee': f'无效的电费编码: {electric_fee}'})
+
         return attrs
 
 
@@ -258,6 +364,7 @@ class MerchantApartmentListSerializer(serializers.Serializer):
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
     detail_address = serializers.CharField(max_length=200, help_text='详细门牌号')
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
+    min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     status = serializers.CharField(max_length=30, help_text='房源状态')
     created_at = TimestampField(help_text='创建时间')
     updated_at = TimestampField(help_text='更新时间')
@@ -282,6 +389,15 @@ class MerchantApartmentDetailSerializer(serializers.Serializer):
     detail_address = serializers.CharField(max_length=200, help_text='详细门牌号')
     contact_phone = serializers.CharField(max_length=11, help_text='联系电话')
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
+    longitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='经度', allow_null=True)
+    latitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='纬度', allow_null=True)
+    property_fee = serializers.IntegerField(help_text='物业费（元/月）', allow_null=True)
+    water_fee = serializers.CharField(max_length=30, help_text='水费编码', allow_null=True)
+    electric_fee = serializers.CharField(max_length=30, help_text='电费编码', allow_null=True)
+    service_fee = serializers.IntegerField(help_text='服务费（元/月）', allow_null=True)
+    other_fees = serializers.CharField(max_length=100, help_text='其他费用说明', allow_blank=True)
+    min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
+    verified = serializers.BooleanField(help_text='是否认证')
     status = serializers.CharField(max_length=30, help_text='房源状态')
     created_at = TimestampField(help_text='创建时间')
     updated_at = TimestampField(help_text='更新时间')
@@ -363,7 +479,14 @@ class RoomTypeListSerializer(serializers.Serializer):
     window_type_label = serializers.SerializerMethodField(help_text='内外窗展示标签')
     floor = serializers.IntegerField(help_text='楼层')
     sort = serializers.IntegerField(help_text='展示排序')
+    area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='面积（㎡）', allow_null=True)
+    orientation = serializers.CharField(max_length=30, help_text='朝向编码', allow_null=True)
+    orientation_label = serializers.SerializerMethodField(help_text='朝向展示标签')
+    available_date = serializers.DateField(help_text='可入住日期', allow_null=True)
     min_monthly_rent = serializers.SerializerMethodField(help_text='该房型最低月租金')
+
+    def get_orientation_label(self, obj):
+        return get_dict_label('orientation', obj.orientation)
 
     def get_layout_type_label(self, obj):
         return get_dict_label('layout_type', obj.layout_type)
@@ -398,8 +521,15 @@ class RoomTypeDetailSerializer(serializers.Serializer):
     window_type_label = serializers.SerializerMethodField(help_text='内外窗展示标签')
     floor = serializers.IntegerField(help_text='楼层')
     sort = serializers.IntegerField(help_text='展示排序')
+    area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='面积（㎡）', allow_null=True)
+    orientation = serializers.CharField(max_length=30, help_text='朝向编码', allow_null=True)
+    orientation_label = serializers.SerializerMethodField(help_text='朝向展示标签')
+    available_date = serializers.DateField(help_text='可入住日期', allow_null=True)
     rental_plans = RentalPlanListSerializer(many=True, help_text='租期租金方案列表')
     apartment = serializers.SerializerMethodField(help_text='所属公寓简要信息')
+
+    def get_orientation_label(self, obj):
+        return get_dict_label('orientation', obj.orientation)
 
     def get_layout_type_label(self, obj):
         return get_dict_label('layout_type', obj.layout_type)
@@ -425,6 +555,7 @@ class ApartmentListItemSerializer(serializers.Serializer):
     district_name = serializers.SerializerMethodField(help_text='行政区名称')
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
+    min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
 
     def get_district_name(self, obj):
@@ -453,6 +584,15 @@ class ApartmentDetailSerializer(serializers.Serializer):
     detail_address = serializers.CharField(max_length=200, help_text='详细门牌号')
     contact_phone = serializers.CharField(max_length=11, help_text='联系电话')
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
+    longitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='经度', allow_null=True)
+    latitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='纬度', allow_null=True)
+    property_fee = serializers.IntegerField(help_text='物业费（元/月）', allow_null=True)
+    water_fee = serializers.CharField(max_length=30, help_text='水费编码', allow_null=True)
+    electric_fee = serializers.CharField(max_length=30, help_text='电费编码', allow_null=True)
+    service_fee = serializers.IntegerField(help_text='服务费（元/月）', allow_null=True)
+    other_fees = serializers.CharField(max_length=100, help_text='其他费用说明', allow_blank=True)
+    min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
+    verified = serializers.BooleanField(help_text='是否认证')
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
     room_types = serializers.SerializerMethodField(help_text='房型卡片列表')
 

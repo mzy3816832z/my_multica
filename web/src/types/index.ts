@@ -42,6 +42,12 @@ export interface LoginResult {
   user: User
 }
 
+// 刷新 Token 返回
+export interface RefreshTokenResult {
+  access_token: string
+  refresh_token: string
+}
+
 // 字典项
 export interface DictItem {
   code: string
@@ -153,4 +159,11 @@ export interface MerchantAuditItem {
 // 商家房源详情（含房型）
 export interface MerchantApartmentDetail extends Apartment {
   room_types: RoomType[]
+}
+
+// 热门区域
+export interface HotDistrict {
+  district_id: number
+  name: string
+  count: number
 }

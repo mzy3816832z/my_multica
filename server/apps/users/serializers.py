@@ -56,6 +56,17 @@ class TokenResponseSerializer(serializers.Serializer):
     user = serializers.DictField(help_text='用户信息')
 
 
+class RefreshTokenSerializer(serializers.Serializer):
+    """刷新 Token 请求序列化器"""
+    refresh_token = serializers.CharField(help_text='刷新令牌')
+
+
+class RefreshTokenResponseSerializer(serializers.Serializer):
+    """刷新 Token 响应序列化器"""
+    access_token = serializers.CharField(help_text='访问令牌')
+    refresh_token = serializers.CharField(help_text='刷新令牌')
+
+
 class UserSerializer(serializers.Serializer):
     """用户信息序列化器"""
     id = serializers.IntegerField(help_text='用户ID')

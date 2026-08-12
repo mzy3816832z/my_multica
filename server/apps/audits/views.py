@@ -2,6 +2,7 @@
 管理员审核模块视图
 """
 import logging
+from datetime import date
 
 from django.db import transaction
 from django.db.models import Case, IntegerField, Value, When
@@ -328,6 +329,13 @@ def _apply_submitted_data(apartment, submitted_data):
     apartment.street_id = submitted_data.get('street_id', apartment.street_id)
     apartment.detail_address = submitted_data.get('detail_address', apartment.detail_address)
     apartment.contact_phone = submitted_data.get('contact_phone', apartment.contact_phone)
+    apartment.longitude = submitted_data.get('longitude', apartment.longitude)
+    apartment.latitude = submitted_data.get('latitude', apartment.latitude)
+    apartment.property_fee = submitted_data.get('property_fee', apartment.property_fee)
+    apartment.water_fee = submitted_data.get('water_fee', apartment.water_fee)
+    apartment.electric_fee = submitted_data.get('electric_fee', apartment.electric_fee)
+    apartment.service_fee = submitted_data.get('service_fee', apartment.service_fee)
+    apartment.other_fees = submitted_data.get('other_fees', apartment.other_fees or '')
     apartment.save()
 
     # 全量替换房型与租金方案
@@ -338,6 +346,7 @@ def _apply_submitted_data(apartment, submitted_data):
             rt.delete()
 
         global_min_rent = None
+        global_min_area = None
         for rt_data in room_types_data:
             room_type = RoomType.objects.create(
                 apartment=apartment,
@@ -348,7 +357,15 @@ def _apply_submitted_data(apartment, submitted_data):
                 window_type=rt_data['window_type'],
                 floor=rt_data['floor'],
                 sort=rt_data.get('sort', 0),
+                area=rt_data.get('area'),
+                orientation=rt_data.get('orientation') or None,
+                available_date=date.fromisoformat(rt_data['available_date']) if rt_data.get('available_date') else None,
             )
+            room_area = rt_data.get('area')
+            if room_area is not None:
+                if global_min_area is None or room_area < global_min_area:
+                    global_min_area = room_area
+
             for rp_data in rt_data.get('rental_plans', []):
                 RentalPlan.objects.create(
                     room_type=room_type,
@@ -359,9 +376,15 @@ def _apply_submitted_data(apartment, submitted_data):
                 if global_min_rent is None or rp_data['monthly_rent'] < global_min_rent:
                     global_min_rent = rp_data['monthly_rent']
 
+        update_fields = []
         if global_min_rent is not None:
             apartment.min_monthly_rent = global_min_rent
-            apartment.save(update_fields=['min_monthly_rent'])
+            update_fields.append('min_monthly_rent')
+        if global_min_area is not None:
+            apartment.min_area = global_min_area
+            update_fields.append('min_area')
+        if update_fields:
+            apartment.save(update_fields=update_fields)
 
 
 def _send_reject_message(audit, reject_reason):

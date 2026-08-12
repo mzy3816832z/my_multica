@@ -146,6 +146,7 @@ def my_favorites(request):
             'district_name': apt.district.name if apt.district else None,
             'street_name': apt.street.name if apt.street else None,
             'min_monthly_rent': apt.min_monthly_rent,
+            'min_area': float(apt.min_area) if apt.min_area is not None else None,
             'is_offline': apt.status != 'published' or apt.deleted_at is not None,
             'created_at': fav.created_at,
         })
