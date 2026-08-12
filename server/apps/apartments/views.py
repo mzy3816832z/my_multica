@@ -4,6 +4,7 @@
 import copy
 import logging
 from decimal import Decimal
+from math import radians, cos, sin, asin, sqrt
 
 from django.db import transaction
 from django.db.models import F, Q, Case, When, Value, IntegerField
@@ -24,6 +25,7 @@ from apps.apartments.serializers import (
 )
 from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
 from apps.audits.models import AuditRecord
+from apps.metro.models import MetroStation
 from core.exceptions import BusinessException, NotFoundException, GoneException
 from core.pagination import StandardPagination
 from core.response import ErrorCode, unified_response, UnifiedErrorResponseSerializer
@@ -34,6 +36,21 @@ logger = logging.getLogger('apps')
 # ============================================================
 # 公共房源接口（公开访问）
 # ============================================================
+
+METRO_RADIUS_KM = 1.5
+
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    lat1, lon1, lat2, lon2 = map(
+        radians,
+        [float(lat1), float(lon1), float(lat2), float(lon2)],
+    )
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    return 6371 * c
+
 
 SORT_OPTIONS = {
     'latest': ['-updated_at'],
@@ -61,6 +78,7 @@ SORT_OPTIONS = {
         {'name': 'min_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最低月租金'},
         {'name': 'max_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最高月租金'},
         {'name': 'sort', 'in': 'query', 'schema': {'type': 'string'}, 'description': '排序方式：latest(默认) / price_asc / price_desc / area_desc / area_asc'},
+        {'name': 'metro_station_ids', 'in': 'query', 'schema': {'type': 'array', 'items': {'type': 'integer'}}, 'description': '地铁站点 ID 数组（多选），筛选距站点 ≤1.5km 的房源'},
         {'name': 'page', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '页码，默认 1'},
         {'name': 'page_size', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '每页条数，默认 10，最大 100'},
     ],
@@ -160,6 +178,39 @@ def apartment_list(request):
             queryset = queryset.filter(min_monthly_rent__lte=int(max_price))
         except ValueError:
             pass
+
+    metro_station_ids = request.query_params.get('metro_station_ids')
+    if metro_station_ids:
+        try:
+            station_ids = [int(x) for x in metro_station_ids.split(',') if x.strip()]
+        except ValueError:
+            station_ids = []
+
+        if station_ids:
+            stations = MetroStation.objects.filter(id__in=station_ids).values('id', 'longitude', 'latitude')
+            station_coords = [
+                (float(s['latitude']), float(s['longitude']))
+                for s in stations
+            ]
+
+            if station_coords:
+                candidates = list(
+                    queryset.filter(latitude__isnull=False, longitude__isnull=False)
+                    .values_list('id', 'latitude', 'longitude')
+                )
+
+                qualifying_ids = set()
+                for apt_id, apt_lat, apt_lon in candidates:
+                    apt_lat_f = float(apt_lat)
+                    apt_lon_f = float(apt_lon)
+                    for st_lat, st_lon in station_coords:
+                        if haversine_distance(st_lat, st_lon, apt_lat_f, apt_lon_f) <= METRO_RADIUS_KM:
+                            qualifying_ids.add(apt_id)
+                            break
+
+                queryset = queryset.filter(id__in=qualifying_ids)
+            else:
+                queryset = queryset.none()
 
     # 分页
     paginator = StandardPagination()

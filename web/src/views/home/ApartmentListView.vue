@@ -2,10 +2,10 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getApartments, getHotDistricts } from '@/api/apartment'
+import { getApartments, getHotDistricts, getMetroLines } from '@/api/apartment'
 import { getDistricts } from '@/api/dict'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment, District, DictItem, HotDistrict } from '@/types'
+import type { Apartment, District, DictItem, HotDistrict, MetroLine, MetroStation } from '@/types'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -94,6 +94,7 @@ const filter = reactive({
   lease_terms: [] as string[],
   min_price: undefined as number | undefined,
   max_price: undefined as number | undefined,
+  metro_station_ids: [] as number[],
 })
 
 const sort = ref('latest')
@@ -154,8 +155,42 @@ const activeFilterCount = computed(() => {
   if (filter.layout_types.length > 0) count++
   if (filter.lease_terms.length > 0) count++
   if (filter.min_price !== undefined || filter.max_price !== undefined) count++
+  if (filter.metro_station_ids.length > 0) count++
   return count
 })
+
+// ================= 地铁筛选 =================
+const metroLines = ref<MetroLine[]>([])
+const metroStations = ref<MetroStation[]>([])
+
+async function loadMetroLines() {
+  try {
+    const lines = await getMetroLines()
+    metroLines.value = lines
+  } catch {
+    metroLines.value = []
+  }
+}
+
+function selectMetroLine(line: MetroLine) {
+  if (selectedMetroLineId.value === line.id) {
+    selectedMetroLineId.value = null
+    metroStations.value = []
+    filter.metro_station_ids = []
+  } else {
+    selectedMetroLineId.value = line.id
+    metroStations.value = line.stations
+    filter.metro_station_ids = []
+  }
+}
+
+const selectedMetroLineId = ref<number | null>(null)
+
+function toggleMetroStation(id: number) {
+  const idx = filter.metro_station_ids.indexOf(id)
+  if (idx > -1) filter.metro_station_ids.splice(idx, 1)
+  else filter.metro_station_ids.push(id)
+}
 
 // ================= 加载街道数据（保留接口调用） =================
 async function loadStreets(parentId: number) {
@@ -193,6 +228,7 @@ async function fetchList(isRefresh = false) {
       lease_terms: filter.lease_terms.length > 0 ? filter.lease_terms : undefined,
       min_price: filter.min_price,
       max_price: filter.max_price,
+      metro_station_ids: filter.metro_station_ids.length > 0 ? filter.metro_station_ids : undefined,
       sort: sort.value !== 'latest' ? sort.value : undefined,
       page: currentPage,
       page_size: pageSize.value,
@@ -246,7 +282,10 @@ function onFilterReset() {
   filter.lease_terms = []
   filter.min_price = undefined
   filter.max_price = undefined
+  filter.metro_station_ids = []
   streets.value = []
+  selectedMetroLineId.value = null
+  metroStations.value = []
 }
 
 function onFilterClear() {
@@ -316,6 +355,7 @@ async function toggleFavorite(apartment: Apartment, event: Event) {
 // ================= 初始化 =================
 onMounted(() => {
   loadDistricts()
+  loadMetroLines()
   fetchHotDistricts()
   fetchList(true)
 })
@@ -602,6 +642,38 @@ onMounted(() => {
                 placeholder="最高"
                 class="flex-1"
               />
+            </div>
+          </div>
+
+          <!-- 地铁 -->
+          <div>
+            <div class="text-sm font-bold text-gray-900 mb-2">地铁</div>
+            <div class="flex flex-wrap gap-2">
+              <van-tag
+                v-for="line in metroLines"
+                :key="line.id"
+                :type="selectedMetroLineId === line.id ? 'primary' : 'default'"
+                size="large"
+                round
+                @click="selectMetroLine(line)"
+              >
+                {{ line.name }}
+              </van-tag>
+            </div>
+            <div v-if="selectedMetroLineId !== null && metroStations.length > 0" class="mt-3">
+              <div class="text-xs text-gray-500 mb-2">选择站点（多选）</div>
+              <div class="flex flex-wrap gap-2">
+                <van-tag
+                  v-for="station in metroStations"
+                  :key="station.id"
+                  :type="filter.metro_station_ids.includes(station.id) ? 'primary' : 'default'"
+                  size="medium"
+                  round
+                  @click="toggleMetroStation(station.id)"
+                >
+                  {{ station.name }}
+                </van-tag>
+              </div>
             </div>
           </div>
         </div>
