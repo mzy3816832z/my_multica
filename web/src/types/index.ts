@@ -14,6 +14,7 @@ export interface FavoriteItem {
   district_name: string
   street_name: string
   min_monthly_rent: number | null
+  is_offline: boolean
   created_at: number
 }
 

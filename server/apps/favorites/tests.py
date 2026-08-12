@@ -259,6 +259,7 @@ class MyFavoritesListTests(TestCase):
         self.assertIn('district_name', item)
         self.assertIn('street_name', item)
         self.assertIn('min_monthly_rent', item)
+        self.assertIn('is_offline', item)
         self.assertIn('created_at', item)
         self.assertEqual(item['apartment_name'], '公寓A')
         self.assertEqual(item['district_name'], '浦东新区')

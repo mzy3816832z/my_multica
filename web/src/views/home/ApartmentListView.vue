@@ -36,41 +36,16 @@ const filter = reactive({
 })
 
 
-// 行政区名称静态映射（仅用于展示名称和排序，真实ID从接口获取）
-const districtNameMap = new Map<string, number>([
-  ['黄浦区', 1],
-  ['静安区', 2],
-  ['徐汇区', 3],
-  ['长宁区', 4],
-  ['普陀区', 5],
-  ['虹口区', 6],
-  ['杨浦区', 7],
-  ['浦东新区', 8],
-  ['闵行区', 9],
-  ['宝山区', 10],
-  ['嘉定区', 11],
-  ['金山区', 12],
-  ['松江区', 13],
-  ['青浦区', 14],
-  ['奉贤区', 15],
-  ['崇明区', 16],
-])
-
 const districts = ref<District[]>([])
 
-// 加载真实行政区数据（带真实ID）
 async function loadDistricts() {
   try {
     const res = await getDistricts({ level: 1 })
-    // 按 districtNameMap 中的顺序排序，保持前端展示顺序一致
     const sorted = res.sort((a: District, b: District) => {
-      const sortA = districtNameMap.get(a.name) || 999
-      const sortB = districtNameMap.get(b.name) || 999
-      return sortA - sortB
+      return (a.sort || 0) - (b.sort || 0)
     })
     districts.value = sorted
   } catch {
-    // 降级：如果接口失败，保持空数组，不显示行政区
     districts.value = []
   }
 }
@@ -344,17 +319,15 @@ onMounted(() => {
     </van-pull-refresh>
 
     <!-- 商家悬浮发布按钮 -->
-    <van-floating-bubble
+    <div
       v-if="authStore.isLandlord"
-      axis="xy"
-      magnetic="x"
-      :offset="{ x: 320, y: 500 }"
+      class="fixed-fab"
       @click="goCreate"
     >
       <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg">
         <van-icon name="plus" class="text-white text-xl" />
       </div>
-    </van-floating-bubble>
+    </div>
 
     <!-- 搜索弹窗 -->
     <van-popup v-model:show="showSearch" position="top" :style="{ height: '100%' }" class="bg-white">
@@ -524,7 +497,11 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-:deep(.van-floating-bubble) {
-  --van-floating-bubble-background: transparent;
+.fixed-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 80px;
+  z-index: 999;
+  cursor: pointer;
 }
 </style>

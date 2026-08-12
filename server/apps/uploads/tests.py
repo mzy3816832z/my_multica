@@ -64,7 +64,7 @@ class UploadImageTests(TestCase):
         """成功上传 PNG 图片"""
         image = self._create_image_file('png')
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': image},
             format='multipart',
         )
@@ -81,7 +81,7 @@ class UploadImageTests(TestCase):
         """成功上传 JPG 图片"""
         image = self._create_image_file('jpg')
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': image},
             format='multipart',
         )
@@ -93,7 +93,7 @@ class UploadImageTests(TestCase):
         """成功上传 WEBP 图片"""
         image = self._create_image_file('webp')
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': image},
             format='multipart',
         )
@@ -106,7 +106,7 @@ class UploadImageTests(TestCase):
         client = APIClient()
         image = self._create_image_file('png')
         response = client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': image},
             format='multipart',
         )
@@ -116,7 +116,7 @@ class UploadImageTests(TestCase):
     def test_upload_image_no_file(self):
         """未提供文件应返回 400001"""
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {},
             format='multipart',
         )
@@ -137,7 +137,7 @@ class UploadImageTests(TestCase):
         )
 
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': file_obj},
             format='multipart',
         )
@@ -156,7 +156,7 @@ class UploadImageTests(TestCase):
             buffer.getbuffer().nbytes, None
         )
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': file_obj},
             format='multipart',
         )
@@ -172,7 +172,7 @@ class UploadImageTests(TestCase):
             buffer.getbuffer().nbytes, None
         )
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': file_obj},
             format='multipart',
         )
@@ -183,7 +183,7 @@ class UploadImageTests(TestCase):
         """上传后图片 URL 可访问（验证文件存在且 URL 可解析）"""
         image = self._create_image_file('png')
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': image},
             format='multipart',
         )
@@ -208,7 +208,7 @@ class UploadImageTests(TestCase):
         """上传路径按日期分目录存储"""
         image = self._create_image_file('png')
         response = self.client.post(
-            '/api/v1/uploads/image',
+            '/api/v1/uploads/image/',
             {'file': image},
             format='multipart',
         )

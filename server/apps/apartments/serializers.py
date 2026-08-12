@@ -1,10 +1,24 @@
 """
 房源模块序列化器
 """
+import re
 from rest_framework import serializers
 
 from core.fields import TimestampField
 from apps.dicts.models import SystemDict
+
+
+# ============================================================
+# 校验辅助
+# ============================================================
+
+PHONE_REGEX = re.compile(r'^1[3-9]\d{9}$')
+
+
+def validate_phone(value):
+    if not PHONE_REGEX.match(value):
+        raise serializers.ValidationError('手机号格式不正确')
+    return value
 
 
 # ============================================================
@@ -133,6 +147,7 @@ class ApartmentCreateSerializer(serializers.Serializer):
         max_length=11,
         min_length=11,
         help_text='联系电话（11 位手机号）',
+        validators=[validate_phone],
     )
     room_types = RoomTypeSerializer(
         many=True,
@@ -193,6 +208,7 @@ class ApartmentUpdateSerializer(serializers.Serializer):
         min_length=11,
         required=False,
         help_text='联系电话（11 位手机号）',
+        validators=[validate_phone],
     )
     room_types = RoomTypeSerializer(
         many=True,
@@ -356,16 +372,10 @@ class RoomTypeListSerializer(serializers.Serializer):
         return get_dict_label('window_type', obj.window_type)
 
     def get_min_monthly_rent(self, obj):
-        """计算该房型最低月租金：优先用 Apartment 缓存字段，无缓存时动态计算"""
-        # 优先使用 Apartment 的 min_monthly_rent 缓存字段
-        apartment_min = obj.apartment.min_monthly_rent
-        if apartment_min is not None:
-            return apartment_min
-        # 缓存为空时，从当前未删除的 rental_plans 动态计算
+        """计算该房型自身最低月租金"""
         rents = [rp.monthly_rent for rp in obj.rental_plans.all() if rp.monthly_rent is not None]
         if rents:
             return min(rents)
-        # 若当前未删除的方案也为空，尝试从所有对象（含已软删除）中恢复
         all_rents = [rp.monthly_rent for rp in obj.rental_plans.model.all_objects.filter(room_type=obj) if rp.monthly_rent is not None]
         return min(all_rents) if all_rents else None
 

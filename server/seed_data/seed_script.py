@@ -182,8 +182,8 @@ SYSTEM_DICTS = [
 # ============================
 # 3. 管理员账号
 # ============================
-ADMIN_USERNAME = 'admin123'
-ADMIN_PASSWORD = '3816832z'
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin123')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '3816832z')
 ADMIN_ROLE = 'admin'
 
 
