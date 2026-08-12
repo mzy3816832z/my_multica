@@ -13,12 +13,19 @@ class MessageListItemSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=100, help_text='标题')
     content = serializers.CharField(help_text='内容')
     related_apartment_id = serializers.IntegerField(help_text='关联房源 ID')
+    related_apartment_name = serializers.SerializerMethodField(help_text='关联房源名称（已删除时为 null）')
     related_audit_id = serializers.IntegerField(help_text='关联审核单 ID', allow_null=True)
     is_read = serializers.BooleanField(help_text='是否已读')
     created_at = TimestampField(help_text='创建时间')
 
     def get_type_display(self, obj):
         return obj.get_type_display()
+
+    def get_related_apartment_name(self, obj):
+        apt = obj.related_apartment
+        if apt and apt.deleted_at is None:
+            return apt.name
+        return None
 
 
 class MessageReadSerializer(serializers.Serializer):
