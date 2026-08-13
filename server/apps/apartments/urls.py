@@ -8,6 +8,7 @@ urlpatterns = [
     # 公共房源接口（公开访问）
     path('', views.apartment_list, name='apartment-list'),
     path('hot-districts/', views.hot_districts, name='hot-districts'),
+    path('compare/', views.apartment_compare, name='apartment-compare'),
     path('<int:id>/', views.apartment_detail, name='apartment-detail'),
     path('<int:id>/room-types/', views.apartment_room_types, name='apartment-room-types'),
     path('room-types/<int:id>/', views.room_type_detail, name='room-type-detail'),

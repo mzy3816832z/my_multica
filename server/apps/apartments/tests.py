@@ -1418,3 +1418,137 @@ class EnumValidationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['code'], 400001)
         self.assertIn('无效的租期', response.json()['message'])
+
+
+class ApartmentCompareTests(TestCase):
+    """房源对比接口测试"""
+
+    def setUp(self):
+        from apps.dicts.models import SystemDict
+
+        self.client = APIClient()
+        self.url = '/api/v1/apartments/compare/'
+
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+
+        # 字典：朝向/设施/费用类型（get_or_create 避免与种子数据冲突）
+        SystemDict.objects.get_or_create(category='window_orientation', code='south', defaults={'label': '南', 'sort': 1})
+        SystemDict.objects.get_or_create(category='window_orientation', code='south_east', defaults={'label': '东南', 'sort': 2})
+        SystemDict.objects.get_or_create(category='facility', code='air_conditioner', defaults={'label': '空调', 'sort': 1})
+        SystemDict.objects.get_or_create(category='facility', code='wifi', defaults={'label': 'WiFi', 'sort': 2})
+        SystemDict.objects.get_or_create(category='fee_type', code='civilian', defaults={'label': '民水民电', 'sort': 1})
+
+        self.landlord = User.objects.create(phone='13800138000', password='fake', role='landlord', is_active=True)
+
+        self.apartment_a = Apartment.objects.create(
+            landlord=self.landlord,
+            name='公寓A',
+            cover_image='https://example.com/a.jpg',
+            description='描述A',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路1号',
+            contact_phone='13800138000',
+            status='published',
+            min_monthly_rent=3000,
+            min_area=25.0,
+            property_fee=200,
+            water_fee='civilian',
+            electric_fee='civilian',
+            service_fee=0,
+            other_fees='',
+        )
+        room_a = RoomType.objects.create(
+            apartment=self.apartment_a,
+            name='单间A',
+            images=[],
+            facilities=['air_conditioner', 'wifi'],
+            layout_type='studio',
+            window_type='outer',
+            floor=5,
+            sort=0,
+            orientation='south',
+        )
+        RentalPlan.objects.create(room_type=room_a, lease_term='1_month', monthly_rent=3000, payment_method='pay_1_deposit_1')
+
+        self.apartment_b = Apartment.objects.create(
+            landlord=self.landlord,
+            name='公寓B',
+            cover_image='https://example.com/b.jpg',
+            description='描述B',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路2号',
+            contact_phone='13800138001',
+            status='published',
+            min_monthly_rent=5000,
+            min_area=40.0,
+            property_fee=None,
+            water_fee=None,
+            electric_fee=None,
+            service_fee=100,
+            other_fees='网费50',
+        )
+        room_b = RoomType.objects.create(
+            apartment=self.apartment_b,
+            name='单间B',
+            images=[],
+            facilities=['air_conditioner'],
+            layout_type='two_bedroom',
+            window_type='outer',
+            floor=8,
+            sort=0,
+            orientation='south_east',
+        )
+        RentalPlan.objects.create(room_type=room_b, lease_term='1_year', monthly_rent=5000, payment_method='pay_3_deposit_1')
+
+    def test_compare_success(self):
+        """对比接口返回输入顺序的简化数据"""
+        response = self.client.get(self.url, {'ids': f'{self.apartment_a.id},{self.apartment_b.id}'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(len(data), 2)
+        self.assertEqual(data[0]['id'], self.apartment_a.id)
+        self.assertEqual(data[1]['id'], self.apartment_b.id)
+
+        a = data[0]
+        self.assertEqual(a['name'], '公寓A')
+        self.assertEqual(a['min_monthly_rent'], 3000)
+        self.assertEqual(a['min_area'], 25.0)
+        self.assertEqual(a['orientations'], ['南'])
+        self.assertEqual(a['fees']['property_fee'], 200)
+        self.assertEqual(a['fees']['water_fee_label'], '民用')
+        self.assertEqual(a['facilities'], ['WiFi', '空调'])
+
+        b = data[1]
+        self.assertEqual(b['orientations'], ['东南'])
+        self.assertIsNone(b['fees']['water_fee_label'])
+
+    def test_compare_skips_unpublished(self):
+        """未上架房源不进入对比结果"""
+        response = self.client.get(self.url, {'ids': f'{self.apartment_a.id},99999'})
+        data = response.json()['data']
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['id'], self.apartment_a.id)
+
+    def test_compare_too_many(self):
+        """超过3套返回参数错误"""
+        response = self.client.get(self.url, {'ids': '1,2,3,4'})
+        self.assertEqual(response.json()['code'], 400001)
+        self.assertIn('最多对比3套', response.json()['message'])
+
+    def test_compare_too_few(self):
+        """少于2套返回参数错误"""
+        response = self.client.get(self.url, {'ids': str(self.apartment_a.id)})
+        self.assertEqual(response.json()['code'], 400001)
+
+    def test_compare_missing_ids(self):
+        """缺少 ids 参数返回参数错误"""
+        response = self.client.get(self.url)
+        self.assertEqual(response.json()['code'], 400001)
+
+    def test_compare_invalid_ids(self):
+        """ids 非法返回参数错误"""
+        response = self.client.get(self.url, {'ids': 'abc,def'})
+        self.assertEqual(response.json()['code'], 400001)

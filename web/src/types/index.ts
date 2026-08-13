@@ -188,6 +188,27 @@ export interface HotDistrict {
   count: number
 }
 
+// 房源对比费用明细
+export interface ApartmentCompareFees {
+  property_fee: number | null
+  water_fee_label: string | null
+  electric_fee_label: string | null
+  service_fee: number | null
+  other_fees: string
+}
+
+// 房源对比数据项
+export interface ApartmentCompareItem {
+  id: number
+  name: string
+  cover_image: string
+  min_monthly_rent: number | null
+  min_area: number | null
+  orientations: string[]
+  fees: ApartmentCompareFees
+  facilities: string[]
+}
+
 // 地铁站点
 export interface MetroStation {
   id: number
