@@ -224,3 +224,7 @@ LOGGING = {
 
 # SMS
 SMS_PROVIDER = os.getenv('SMS_PROVIDER', 'mock')
+
+# 高德地图 API Key（JS API 2.0 + Web Service API）
+AMAP_KEY = os.getenv('AMAP_KEY', '')
+AMAP_JS_KEY = os.getenv('AMAP_JS_KEY', AMAP_KEY)

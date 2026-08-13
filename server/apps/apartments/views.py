@@ -5,6 +5,7 @@ import copy
 import logging
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import F, Q, Case, When, Value, IntegerField
 from django.utils import timezone
@@ -18,10 +19,16 @@ from apps.apartments.serializers import (
     ApartmentDetailSerializer,
     ApartmentListItemSerializer,
     ApartmentUpdateSerializer,
+    GeocodeRequestSerializer,
+    GeocodeResponseSerializer,
+    MapConfigResponseSerializer,
     MerchantApartmentDetailSerializer,
     MerchantApartmentListSerializer,
+    NearbyPoiSerializer,
+    NearbyResponseSerializer,
     RoomTypeDetailSerializer,
 )
+from apps.apartments.map_service import geocode, search_nearby_pois, build_static_map_url
 from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
 from apps.audits.models import AuditRecord
 from core.exceptions import BusinessException, NotFoundException, GoneException
@@ -341,6 +348,110 @@ def room_type_detail(request, id):
     room_type.rental_plans.all()  # prefetch 已在序列化器中通过 context 控制，这里直接查
     serializer = RoomTypeDetailSerializer(room_type)
     return unified_response(data=serializer.data)
+
+
+# ============================================================
+# 地图相关接口
+# ============================================================
+
+@extend_schema(
+    request=GeocodeRequestSerializer,
+    responses={
+        200: GeocodeResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+    },
+    summary='服务端代理地理编码',
+    description='将地址文本转换为经纬度坐标。调用高德地理编码 API，返回 longitude/latitude。如果高德 Key 未配置或调用失败，返回 null。',
+    tags=['公共房源'],
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def apartment_geocode(request):
+    """
+    POST /api/v1/apartments/geocode
+    服务端代理地理编码
+    """
+    serializer = GeocodeRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        first_msg = list(serializer.errors.values())[0][0] if isinstance(serializer.errors, dict) else str(serializer.errors)
+        raise BusinessException(str(first_msg), code=ErrorCode.PARAM_ERROR)
+
+    address = serializer.validated_data['address']
+    if not settings.AMAP_KEY:
+        return unified_response(data={}, message='地图服务未配置')
+
+    result = geocode(address)
+    if result is None:
+        return unified_response(data={}, message='地理编码失败，请检查地址是否正确')
+
+    return unified_response(data={
+        'longitude': str(result['longitude']),
+        'latitude': str(result['latitude']),
+    })
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: NearbyResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
+    summary='房源周边 POI',
+    description='返回房源周边 1km 内的 POI 列表（地铁站/公交站/商超）及静态地图 URL。无经纬度房源返回空列表。',
+    tags=['公共房源'],
+    parameters=[
+        {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
+    ],
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def apartment_nearby(request, id):
+    """
+    GET /api/v1/apartments/{id}/nearby
+    房源周边 POI + 静态地图
+    """
+    try:
+        apartment = Apartment.objects.get(id=id, status='published')
+    except Apartment.DoesNotExist:
+        raise NotFoundException('房源不存在或未上架')
+
+    if apartment.longitude is None or apartment.latitude is None:
+        return unified_response(data={
+            'pois': [],
+            'static_map_url': '',
+        })
+
+    lon = float(apartment.longitude)
+    lat = float(apartment.latitude)
+
+    pois = search_nearby_pois(lon, lat, radius=1000)
+    static_map_url = build_static_map_url(lon, lat)
+
+    return unified_response(data={
+        'pois': pois,
+        'static_map_url': static_map_url,
+    })
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: MapConfigResponseSerializer,
+    },
+    summary='获取地图配置',
+    description='返回前端加载高德 JS API 所需的 Key。',
+    tags=['公共房源'],
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def apartment_map_config(request):
+    """
+    GET /api/v1/apartments/map-config
+    获取地图 JS API Key
+    """
+    return unified_response(data={
+        'amap_js_key': settings.AMAP_JS_KEY or settings.AMAP_KEY,
+    })
 
 
 # ============================================================

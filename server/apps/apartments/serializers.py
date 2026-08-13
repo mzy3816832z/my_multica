@@ -556,6 +556,8 @@ class ApartmentListItemSerializer(serializers.Serializer):
     street_name = serializers.SerializerMethodField(help_text='街道/镇名称')
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
+    longitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='经度', allow_null=True)
+    latitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='纬度', allow_null=True)
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
 
     def get_district_name(self, obj):
@@ -571,6 +573,36 @@ class ApartmentListItemSerializer(serializers.Serializer):
             return False
         from apps.favorites.models import Favorite
         return Favorite.objects.filter(user=request.user, apartment=obj).exists()
+
+
+class GeocodeRequestSerializer(serializers.Serializer):
+    """地理编码请求序列化器"""
+    address = serializers.CharField(max_length=300, help_text='待解析地址')
+
+
+class GeocodeResponseSerializer(serializers.Serializer):
+    """地理编码响应序列化器"""
+    longitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='经度')
+    latitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='纬度')
+
+
+class NearbyPoiSerializer(serializers.Serializer):
+    """周边 POI 序列化器"""
+    name = serializers.CharField(help_text='POI 名称')
+    type = serializers.CharField(help_text='POI 类型（地铁站/公交站/超市便利店）')
+    distance = serializers.IntegerField(help_text='距离（米）')
+    address = serializers.CharField(help_text='POI 地址')
+
+
+class NearbyResponseSerializer(serializers.Serializer):
+    """周边 POI 响应序列化器"""
+    pois = NearbyPoiSerializer(many=True, help_text='周边 POI 列表')
+    static_map_url = serializers.CharField(help_text='高德静态地图 URL', allow_blank=True)
+
+
+class MapConfigResponseSerializer(serializers.Serializer):
+    """地图配置响应序列化器"""
+    amap_js_key = serializers.CharField(help_text='高德 JS API Key')
 
 
 class ApartmentDetailSerializer(serializers.Serializer):

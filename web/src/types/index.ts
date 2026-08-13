@@ -79,6 +79,8 @@ export interface Apartment {
   contact_phone?: string
   status?: string
   min_monthly_rent?: number
+  longitude?: number | null
+  latitude?: number | null
   property_fee?: number | null
   water_fee?: string | null
   water_fee_label?: string | null
@@ -176,4 +178,29 @@ export interface HotDistrict {
   district_id: number
   name: string
   count: number
+}
+
+// POI 周边设施
+export interface NearbyPOI {
+  name: string
+  type: string
+  distance: number
+  address: string
+}
+
+// 周边数据
+export interface NearbyData {
+  pois: NearbyPOI[]
+  static_map_url: string
+}
+
+// 地理编码结果
+export interface GeocodeResult {
+  longitude: string
+  latitude: string
+}
+
+// 地图配置
+export interface MapConfig {
+  amap_js_key: string
 }

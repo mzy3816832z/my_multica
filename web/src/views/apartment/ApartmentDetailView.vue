@@ -9,6 +9,7 @@ import type { Apartment } from '@/types'
 import FeeDetailCard from '@/components/business/FeeDetailCard.vue'
 import FacilityGroup from '@/components/business/FacilityGroup.vue'
 import PhoneActionSheet from '@/components/business/PhoneActionSheet.vue'
+import LocationModule from '@/components/business/LocationModule.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -237,6 +238,13 @@ onMounted(() => {
       <FeeDetailCard :apartment="apartment" />
 
       <FacilityGroup :facilities="allFacilities" />
+
+      <LocationModule
+        v-if="apartment"
+        :apartment-id="apartment.id"
+        :longitude="apartment.longitude ?? null"
+        :latitude="apartment.latitude ?? null"
+      />
 
       <div class="h-6" />
 

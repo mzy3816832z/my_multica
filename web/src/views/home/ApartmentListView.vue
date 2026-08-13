@@ -6,9 +6,12 @@ import { getApartments, getHotDistricts } from '@/api/apartment'
 import { getDistricts } from '@/api/dict'
 import { addFavorite, removeFavorite } from '@/api/favorite'
 import type { Apartment, District, DictItem, HotDistrict } from '@/types'
+import MapView from './MapView.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+
+const viewMode = ref<'list' | 'map'>('list')
 
 // ================= 列表数据 =================
 const list = ref<Apartment[]>([])
@@ -358,9 +361,30 @@ onMounted(() => {
           </template>
         </van-dropdown-item>
       </van-dropdown-menu>
+
+      <div class="flex items-center border-t border-gray-100">
+        <div
+          class="flex-1 text-center py-2 text-sm font-medium cursor-pointer"
+          :class="viewMode === 'list' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'"
+          @click="viewMode = 'list'"
+        >
+          <van-icon name="bars" class="mr-1" />列表
+        </div>
+        <div
+          class="flex-1 text-center py-2 text-sm font-medium cursor-pointer"
+          :class="viewMode === 'map' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'"
+          @click="viewMode = 'map'"
+        >
+          <van-icon name="location-o" class="mr-1" />地图
+        </div>
+      </div>
     </div>
 
-    <!-- 列表内容 -->
+    <div v-if="viewMode === 'map'" class="map-view-wrapper">
+      <MapView :apartments="list" @go-detail="goDetail" />
+    </div>
+
+    <template v-else>
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list
         v-model:loading="loading"
@@ -428,6 +452,7 @@ onMounted(() => {
         </div>
       </van-list>
     </van-pull-refresh>
+    </template>
 
     <!-- 商家悬浮发布按钮 -->
     <div
@@ -617,6 +642,10 @@ onMounted(() => {
 .apartment-list {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.map-view-wrapper {
+  height: calc(100vh - 140px);
 }
 
 .apartment-grid {
