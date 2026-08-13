@@ -18,6 +18,7 @@ declare module 'vue' {
     PhoneActionSheet: typeof import('./components/business/PhoneActionSheet.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ShareSheet: typeof import('./components/business/ShareSheet.vue')['default']
     VanActionSheet: typeof import('vant/es')['ActionSheet']
     VanBadge: typeof import('vant/es')['Badge']
     VanButton: typeof import('vant/es')['Button']

@@ -9,6 +9,7 @@ import type { Apartment } from '@/types'
 import FeeDetailCard from '@/components/business/FeeDetailCard.vue'
 import FacilityGroup from '@/components/business/FacilityGroup.vue'
 import PhoneActionSheet from '@/components/business/PhoneActionSheet.vue'
+import ShareSheet from '@/components/business/ShareSheet.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +21,7 @@ const apartment = ref<Apartment | null>(null)
 const loading = ref(false)
 const isOffline = ref(false)
 const phoneSheetVisible = ref(false)
+const shareSheetVisible = ref(false)
 
 const allFacilities = computed<string[]>(() => {
   if (!apartment.value?.room_types) return []
@@ -117,13 +119,21 @@ onMounted(() => {
       @click-left="goBack"
     >
       <template #right>
-        <van-icon
-          v-if="authStore.isTenant && !isOffline"
-          :name="apartment?.is_favorite ? 'star' : 'star-o'"
-          :class="apartment?.is_favorite ? 'text-warning' : 'text-gray-400'"
-          class="text-xl"
-          @click="toggleFavorite"
-        />
+        <div class="flex items-center gap-3">
+          <van-icon
+            v-if="!isOffline"
+            name="share-o"
+            class="text-xl text-gray-600 cursor-pointer"
+            @click="shareSheetVisible = true"
+          />
+          <van-icon
+            v-if="authStore.isTenant && !isOffline"
+            :name="apartment?.is_favorite ? 'star' : 'star-o'"
+            :class="apartment?.is_favorite ? 'text-warning' : 'text-gray-400'"
+            class="text-xl"
+            @click="toggleFavorite"
+          />
+        </div>
       </template>
     </van-nav-bar>
 
@@ -261,6 +271,14 @@ onMounted(() => {
       <PhoneActionSheet
         v-model:visible="phoneSheetVisible"
         :phone="apartment?.contact_phone || ''"
+      />
+
+      <ShareSheet
+        v-model:visible="shareSheetVisible"
+        :apartment-id="apartment?.id || 0"
+        :apartment-name="apartment?.name || ''"
+        :cover-image="apartment?.cover_image || ''"
+        :price="apartment?.min_monthly_rent"
       />
     </template>
   </div>
