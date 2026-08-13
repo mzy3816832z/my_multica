@@ -28,6 +28,7 @@ const keyword = ref('')
 const showRejectForm = ref(false)
 const rejectReason = ref('')
 const rejectTargetId = ref<number | null>(null)
+const quickReasons = ['图片非实拍', '信息不实', '价格异常', '重复房源']
 
 // 加载列表
 async function loadList(isRefresh = false) {
@@ -260,6 +261,17 @@ onMounted(() => {
     <van-popup v-model:show="showRejectForm" position="bottom" round :style="{ maxHeight: '60%' }">
       <div class="p-4">
         <div class="text-sm font-bold mb-2">驳回原因（必填）</div>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <van-tag
+            v-for="reason in quickReasons"
+            :key="reason"
+            :type="rejectReason === reason ? 'primary' : 'default'"
+            size="medium"
+            @click="rejectReason = reason"
+          >
+            {{ reason }}
+          </van-tag>
+        </div>
         <van-field
           v-model="rejectReason"
           type="textarea"

@@ -187,6 +187,9 @@ SYSTEM_DICTS = [
     {'category': 'facility_group', 'code': 'bathroom', 'label': '卫浴', 'sort': 2},
     {'category': 'facility_group', 'code': 'kitchen', 'label': '厨房', 'sort': 3},
     {'category': 'facility_group', 'code': 'public', 'label': '公共', 'sort': 4},
+
+    # 审核驳回原因
+    {'category': 'reject_reason', 'code': 'fake_image', 'label': '图片非实拍', 'sort': 1},
 ]
 
 

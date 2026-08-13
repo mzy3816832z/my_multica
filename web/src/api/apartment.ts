@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PaginatedData, Apartment, RoomType, HotDistrict, NearbyData, GeocodeResult, MapConfig } from '@/types'
+import type { PaginatedData, Apartment, RoomType, HotDistrict, NearbyData, GeocodeResult, MapConfig, MetroLine, ApartmentCompareItem } from '@/types'
 
 export interface ApartmentListParams {
   keyword?: string
@@ -9,6 +9,7 @@ export interface ApartmentListParams {
   lease_terms?: string[]
   min_price?: number
   max_price?: number
+  metro_station_ids?: number[]
   sort?: string
   page?: number
   page_size?: number
@@ -34,14 +35,14 @@ export function getHotDistricts(): Promise<HotDistrict[]> {
   return request.get('/apartments/hot-districts/')
 }
 
-export function geocodeAddress(address: string): Promise<GeocodeResult> {
-  return request.post('/apartments/geocode/', { address })
-}
-
-export function getNearbyPOIs(id: number): Promise<NearbyData> {
-  return request.get(`/apartments/${id}/nearby/`)
-}
-
 export function getMapConfig(): Promise<MapConfig> {
   return request.get('/apartments/map-config/')
+}
+
+export function getApartmentCompare(ids: number[]): Promise<ApartmentCompareItem[]> {
+  return request.get('/apartments/compare/', { params: { ids: ids.join(',') } })
+}
+
+export function getMetroLines(): Promise<MetroLine[]> {
+  return request.get('/metro/lines/')
 }

@@ -2,10 +2,10 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getApartments, getHotDistricts } from '@/api/apartment'
+import { getApartments, getHotDistricts, getMetroLines } from '@/api/apartment'
 import { getDistricts } from '@/api/dict'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment, District, DictItem, HotDistrict } from '@/types'
+import type { Apartment, District, DictItem, HotDistrict, MetroLine, MetroStation } from '@/types'
 import MapView from './MapView.vue'
 
 const router = useRouter()
@@ -97,6 +97,7 @@ const filter = reactive({
   lease_terms: [] as string[],
   min_price: undefined as number | undefined,
   max_price: undefined as number | undefined,
+  metro_station_ids: [] as number[],
 })
 
 const sort = ref('latest')
@@ -157,8 +158,42 @@ const activeFilterCount = computed(() => {
   if (filter.layout_types.length > 0) count++
   if (filter.lease_terms.length > 0) count++
   if (filter.min_price !== undefined || filter.max_price !== undefined) count++
+  if (filter.metro_station_ids.length > 0) count++
   return count
 })
+
+// ================= 地铁筛选 =================
+const metroLines = ref<MetroLine[]>([])
+const metroStations = ref<MetroStation[]>([])
+
+async function loadMetroLines() {
+  try {
+    const lines = await getMetroLines()
+    metroLines.value = lines
+  } catch {
+    metroLines.value = []
+  }
+}
+
+function selectMetroLine(line: MetroLine) {
+  if (selectedMetroLineId.value === line.id) {
+    selectedMetroLineId.value = null
+    metroStations.value = []
+    filter.metro_station_ids = []
+  } else {
+    selectedMetroLineId.value = line.id
+    metroStations.value = line.stations
+    filter.metro_station_ids = []
+  }
+}
+
+const selectedMetroLineId = ref<number | null>(null)
+
+function toggleMetroStation(id: number) {
+  const idx = filter.metro_station_ids.indexOf(id)
+  if (idx > -1) filter.metro_station_ids.splice(idx, 1)
+  else filter.metro_station_ids.push(id)
+}
 
 // ================= 加载街道数据（保留接口调用） =================
 async function loadStreets(parentId: number) {
@@ -196,6 +231,7 @@ async function fetchList(isRefresh = false) {
       lease_terms: filter.lease_terms.length > 0 ? filter.lease_terms : undefined,
       min_price: filter.min_price,
       max_price: filter.max_price,
+      metro_station_ids: filter.metro_station_ids.length > 0 ? filter.metro_station_ids : undefined,
       sort: sort.value !== 'latest' ? sort.value : undefined,
       page: currentPage,
       page_size: pageSize.value,
@@ -249,7 +285,10 @@ function onFilterReset() {
   filter.lease_terms = []
   filter.min_price = undefined
   filter.max_price = undefined
+  filter.metro_station_ids = []
   streets.value = []
+  selectedMetroLineId.value = null
+  metroStations.value = []
 }
 
 function onFilterClear() {
@@ -316,16 +355,88 @@ async function toggleFavorite(apartment: Apartment, event: Event) {
   }
 }
 
+// ================= 对比选择模式 =================
+const selectMode = ref(false)
+const selectedIds = ref<number[]>([])
+const MAX_COMPARE = 3
+
+let longPressTimer: number | null = null
+let suppressClick = false
+
+function clearLongPress() {
+  if (longPressTimer !== null) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function onCardPress(id: number) {
+  if (selectMode.value) return
+  clearLongPress()
+  longPressTimer = window.setTimeout(() => {
+    suppressClick = true
+    selectMode.value = true
+    toggleSelect(id)
+  }, 500)
+}
+
+function onCardRelease() {
+  clearLongPress()
+}
+
+function onCardClick(id: number) {
+  if (suppressClick) {
+    suppressClick = false
+    return
+  }
+  if (selectMode.value) {
+    toggleSelect(id)
+  } else {
+    goDetail(id)
+  }
+}
+
+function toggleSelect(id: number) {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx > -1) {
+    selectedIds.value.splice(idx, 1)
+  } else {
+    if (selectedIds.value.length >= MAX_COMPARE) {
+      showToast('最多对比3套')
+      return
+    }
+    selectedIds.value.push(id)
+  }
+}
+
+function isSelected(id: number) {
+  return selectedIds.value.includes(id)
+}
+
+function exitSelectMode() {
+  selectMode.value = false
+  selectedIds.value = []
+  clearLongPress()
+}
+
+function startCompare() {
+  if (selectedIds.value.length < 2) return
+  const ids = selectedIds.value.join(',')
+  exitSelectMode()
+  router.push({ path: '/compare', query: { ids } })
+}
+
 // ================= 初始化 =================
 onMounted(() => {
   loadDistricts()
+  loadMetroLines()
   fetchHotDistricts()
   fetchList(true)
 })
 </script>
 
 <template>
-  <div class="apartment-list">
+  <div class="apartment-list" :class="{ 'has-compare-bar': selectMode }">
     <!-- 顶部搜索栏 -->
     <div class="sticky top-0 z-10 bg-white shadow-sm">
       <div class="flex items-center px-3 py-2 gap-2">
@@ -415,9 +526,25 @@ onMounted(() => {
           <div
             v-for="item in list"
             :key="item.id"
-            class="apartment-card bg-white rounded-xl overflow-hidden shadow-sm"
-            @click="goDetail(item.id)"
+            class="apartment-card bg-white rounded-xl overflow-hidden shadow-sm relative"
+            :class="{ 'card-selected': selectMode && isSelected(item.id) }"
+            @click="onCardClick(item.id)"
+            @touchstart="onCardPress(item.id)"
+            @touchend="onCardRelease"
+            @touchmove="onCardRelease"
+            @mousedown="onCardPress(item.id)"
+            @mouseup="onCardRelease"
+            @mouseleave="onCardRelease"
+            @contextmenu.prevent
           >
+            <!-- 选择模式勾选标识 -->
+            <div
+              v-if="selectMode"
+              class="select-indicator"
+              :class="{ active: isSelected(item.id) }"
+            >
+              <van-icon :name="isSelected(item.id) ? 'success' : 'circle'" />
+            </div>
             <!-- 图片 -->
             <div class="card-image bg-gray-100">
               <van-image
@@ -430,7 +557,10 @@ onMounted(() => {
             <!-- 信息 -->
             <div class="card-info flex flex-col justify-between min-w-0">
               <div>
-                <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.name }}</h3>
+                <div class="flex items-center gap-1">
+                  <h3 class="text-base font-bold text-gray-900 line-clamp-1">{{ item.name }}</h3>
+                  <van-tag v-if="item.verified" type="success" size="medium" class="text-xs flex-shrink-0">平台核验</van-tag>
+                </div>
                 <p class="text-sm text-gray-500 mt-1 flex items-center">
                   <van-icon name="location-o" class="mr-1" />
                   {{ item.district_name || '' }} {{ item.street_name || '' }}
@@ -440,7 +570,7 @@ onMounted(() => {
                 <span v-if="item.min_monthly_rent != null" class="text-primary font-bold">¥{{ item.min_monthly_rent }}/月起</span>
                 <span v-else class="text-sm text-gray-400">暂无报价</span>
                 <van-icon
-                  v-if="authStore.isTenant"
+                  v-if="authStore.isTenant && !selectMode"
                   :name="item.is_favorite ? 'star' : 'star-o'"
                   :class="item.is_favorite ? 'text-warning' : 'text-gray-400'"
                   class="text-xl"
@@ -462,6 +592,20 @@ onMounted(() => {
     >
       <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg">
         <van-icon name="plus" class="text-white text-xl" />
+      </div>
+    </div>
+
+    <!-- 对比选择底部栏 -->
+    <div v-if="selectMode" class="compare-bar safe-area-bottom">
+      <span class="compare-count">已选 {{ selectedIds.length }}/{{ MAX_COMPARE }} 套</span>
+      <div class="flex gap-2">
+        <van-button size="small" plain @click="exitSelectMode">取消</van-button>
+        <van-button
+          size="small"
+          type="primary"
+          :disabled="selectedIds.length < 2"
+          @click="startCompare"
+        >开始对比</van-button>
       </div>
     </div>
 
@@ -626,6 +770,38 @@ onMounted(() => {
               />
             </div>
           </div>
+
+          <!-- 地铁 -->
+          <div>
+            <div class="text-sm font-bold text-gray-900 mb-2">地铁</div>
+            <div class="flex flex-wrap gap-2">
+              <van-tag
+                v-for="line in metroLines"
+                :key="line.id"
+                :type="selectedMetroLineId === line.id ? 'primary' : 'default'"
+                size="large"
+                round
+                @click="selectMetroLine(line)"
+              >
+                {{ line.name }}
+              </van-tag>
+            </div>
+            <div v-if="selectedMetroLineId !== null && metroStations.length > 0" class="mt-3">
+              <div class="text-xs text-gray-500 mb-2">选择站点（多选）</div>
+              <div class="flex flex-wrap gap-2">
+                <van-tag
+                  v-for="station in metroStations"
+                  :key="station.id"
+                  :type="filter.metro_station_ids.includes(station.id) ? 'primary' : 'default'"
+                  size="medium"
+                  round
+                  @click="toggleMetroStation(station.id)"
+                >
+                  {{ station.name }}
+                </van-tag>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 底部按钮 -->
@@ -744,5 +920,52 @@ onMounted(() => {
   bottom: 80px;
   z-index: 999;
   cursor: pointer;
+}
+
+.compare-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+  background-color: #fff;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compare-count {
+  font-size: 14px;
+  color: #323233;
+}
+
+.has-compare-bar {
+  padding-bottom: 64px;
+}
+
+.select-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select-indicator.active {
+  background-color: $primary;
+}
+
+.card-selected {
+  box-shadow: 0 0 0 2px $primary;
 }
 </style>

@@ -18,6 +18,7 @@ from apps.audits.serializers import (
     AuditDetailSerializer,
     AuditListItemSerializer,
     AuditRejectSerializer,
+    ApartmentVerifySerializer,
     MerchantAuditListItemSerializer,
 )
 from apps.messages_app.models import Message
@@ -205,22 +206,32 @@ def audit_approve(request, id):
     if audit.status != 'pending':
         raise BusinessException('该审核单已处理，无法再次操作', code=ErrorCode.BUSINESS_ERROR)
 
+    serializer = AuditApproveSerializer(data=request.data)
+    if not serializer.is_valid():
+        first_msg = _extract_first_error(serializer.errors)
+        raise BusinessException(first_msg, code=ErrorCode.PARAM_ERROR)
+
+    verified = serializer.validated_data.get('verified', False)
     apartment = audit.apartment
     reviewer = request.user
 
     with transaction.atomic():
         if audit.type == 'first_review':
-            # 首次审核通过：公寓置为 published
             apartment.status = 'published'
             apartment.save(update_fields=['status'])
         elif audit.type == 'change_review':
-            # 变更审核通过：用 submitted_data 覆盖原房源
             _apply_submitted_data(apartment, audit.submitted_data)
 
-        # 更新审核单状态
+        if verified:
+            apartment.verified = True
+            apartment.save(update_fields=['verified'])
+
         audit.status = 'approved'
         audit.reviewer = reviewer
         audit.save(update_fields=['status', 'reviewer'])
+
+        # 发送审核通过站内信（核心通知，与审核状态强绑定，保留在事务内）
+        _send_approve_message(audit)
 
     logger.info(f'[AuditApprove] reviewer={reviewer.id}, audit={audit.id}, type={audit.type}')
 
@@ -317,6 +328,54 @@ def audit_reject(request, id):
     )
 
 
+@extend_schema(
+    request=ApartmentVerifySerializer,
+    responses={
+        200: {'type': 'object', 'properties': {'code': {'type': 'integer'}, 'message': {'type': 'string'}, 'data': {'type': 'object'}}},
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
+    summary='房源核验管理',
+    description='管理员设置/取消房源核验标识。仅管理员可操作。',
+    tags=['管理员审核'],
+    parameters=[
+        {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
+    ],
+)
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated, IsAdmin])
+def apartment_verify(request, id):
+    """
+    PUT /api/v1/admin/apartments/{id}/verify
+    管理员设置/取消房源核验标识
+    """
+    from apps.apartments.models import Apartment
+
+    serializer = ApartmentVerifySerializer(data=request.data)
+    if not serializer.is_valid():
+        first_msg = _extract_first_error(serializer.errors)
+        raise BusinessException(first_msg, code=ErrorCode.PARAM_ERROR)
+
+    verified = serializer.validated_data['verified']
+
+    try:
+        apartment = Apartment.objects.get(id=id)
+    except Apartment.DoesNotExist:
+        raise NotFoundException('房源不存在')
+
+    apartment.verified = verified
+    apartment.save(update_fields=['verified'])
+
+    logger.info(f'[ApartmentVerify] admin={request.user.id}, apartment={id}, verified={verified}')
+
+    return unified_response(data={
+        'apartment_id': apartment.id,
+        'verified': apartment.verified,
+    })
+
+
 def _apply_submitted_data(apartment, submitted_data):
     """
     将 submitted_data 快照覆盖到原房源（变更审核通过时）
@@ -403,6 +462,32 @@ def _send_reject_message(audit, reject_reason):
     Message.objects.create(
         user=landlord,
         type=msg_type,
+        title=title,
+        content=content,
+        related_apartment=apartment,
+        related_audit=audit,
+    )
+
+
+def _send_approve_message(audit):
+    """
+    发送审核通过站内信
+    """
+    apartment = audit.apartment
+    landlord = apartment.landlord if apartment else None
+    if not landlord:
+        return
+
+    if audit.type == 'first_review':
+        title = '房源审核通过'
+        content = f'您的房源「{apartment.name}」已通过审核，正式上架。'
+    else:
+        title = '房源变更审核通过'
+        content = f'您的房源「{apartment.name}」的变更已通过审核，已生效。'
+
+    Message.objects.create(
+        user=landlord,
+        type='audit_approved',
         title=title,
         content=content,
         related_apartment=apartment,

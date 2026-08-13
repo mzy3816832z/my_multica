@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { Apartment, MerchantAuditItem, MerchantApartmentDetail, PaginatedData } from '@/types'
+import type { Apartment, MerchantAuditItem, MerchantApartmentDetail, MerchantStats, PaginatedData } from '@/types'
 
 export interface CreateApartmentPayload {
   name: string
@@ -9,6 +9,11 @@ export interface CreateApartmentPayload {
   street_id: number
   detail_address: string
   contact_phone: string
+  property_fee?: number
+  water_fee?: string
+  electric_fee?: string
+  service_fee?: number
+  other_fees?: string
   room_types: {
     name: string
     images: string[]
@@ -16,6 +21,9 @@ export interface CreateApartmentPayload {
     layout_type: string
     window_type: string
     floor: number
+    area?: number
+    orientation?: string
+    available_date?: string
     rental_plans: {
       lease_term: string
       monthly_rent: number
@@ -49,6 +57,11 @@ export interface UpdateApartmentPayload {
   street_id?: number
   detail_address?: string
   contact_phone?: string
+  property_fee?: number
+  water_fee?: string
+  electric_fee?: string
+  service_fee?: number
+  other_fees?: string
   room_types?: {
     name?: string
     images?: string[]
@@ -56,6 +69,9 @@ export interface UpdateApartmentPayload {
     layout_type?: string
     window_type?: string
     floor?: number
+    area?: number
+    orientation?: string
+    available_date?: string
     rental_plans?: {
       lease_term?: string
       monthly_rent?: number
@@ -80,4 +96,8 @@ export function deleteApartment(id: number): Promise<void> {
 
 export function getMerchantAudits(params?: { page?: number; page_size?: number }): Promise<PaginatedData<MerchantAuditItem>> {
   return request.get('/merchant/audits/', { params })
+}
+
+export function getMerchantStats(): Promise<MerchantStats> {
+  return request.get('/merchant/stats/')
 }

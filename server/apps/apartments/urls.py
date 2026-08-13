@@ -10,6 +10,7 @@ urlpatterns = [
     path('hot-districts/', views.hot_districts, name='hot-districts'),
     path('geocode/', views.apartment_geocode, name='apartment-geocode'),
     path('map-config/', views.apartment_map_config, name='apartment-map-config'),
+    path('compare/', views.apartment_compare, name='apartment-compare'),
     path('<int:id>/', views.apartment_detail, name='apartment-detail'),
     path('<int:id>/room-types/', views.apartment_room_types, name='apartment-room-types'),
     path('<int:id>/nearby/', views.apartment_nearby, name='apartment-nearby'),

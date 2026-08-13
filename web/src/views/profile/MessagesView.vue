@@ -23,12 +23,16 @@ function onRefresh() {
 async function handleClickMessage(msg: Message) {
   await messageStore.readMessage(msg.id)
 
+  if (msg.type === 'system') {
+    return
+  }
+
   if (!msg.related_apartment_name) {
     showToast('该房源已删除')
     return
   }
 
-  if (msg.type === 'first_rejected' || msg.type === 'change_rejected') {
+  if (msg.type === 'first_rejected' || msg.type === 'change_rejected' || msg.type === 'audit_approved') {
     router.push('/profile/apartments/' + msg.related_apartment_id + '/edit')
   }
 }
@@ -88,6 +92,8 @@ onMounted(() => {
             <div class="mt-2 flex items-center gap-2">
               <van-tag v-if="msg.type === 'first_rejected'" type="danger">首次审核驳回</van-tag>
               <van-tag v-else-if="msg.type === 'change_rejected'" type="warning">变更审核驳回</van-tag>
+              <van-tag v-else-if="msg.type === 'audit_approved'" type="success">审核通过</van-tag>
+              <van-tag v-else-if="msg.type === 'system'" type="primary">系统通知</van-tag>
               <span v-if="msg.is_read" class="text-xs text-gray-400">已读</span>
               <span v-else class="text-xs text-primary">未读</span>
             </div>

@@ -47,6 +47,7 @@ LOCAL_APPS = [
     'apps.favorites',
     'apps.messages_app',
     'apps.uploads',
+    'apps.metro',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

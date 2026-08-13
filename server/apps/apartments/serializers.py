@@ -366,6 +366,8 @@ class MerchantApartmentListSerializer(serializers.Serializer):
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     status = serializers.CharField(max_length=30, help_text='房源状态')
+    views_30d = serializers.IntegerField(help_text='近 30 天浏览量（去重）')
+    favorites_count = serializers.IntegerField(help_text='收藏数')
     created_at = TimestampField(help_text='创建时间')
     updated_at = TimestampField(help_text='更新时间')
 
@@ -374,6 +376,12 @@ class MerchantApartmentListSerializer(serializers.Serializer):
 
     def get_street_name(self, obj):
         return obj.street.name if obj.street else None
+
+
+class MerchantStatsSerializer(serializers.Serializer):
+    """商家数据统计序列化器"""
+    total_views_30d = serializers.IntegerField(help_text='近 30 天浏览量（去重）')
+    total_favorites = serializers.IntegerField(help_text='当前有效收藏总数')
 
 
 class MerchantApartmentDetailSerializer(serializers.Serializer):
@@ -558,6 +566,7 @@ class ApartmentListItemSerializer(serializers.Serializer):
     min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     longitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='经度', allow_null=True)
     latitude = serializers.DecimalField(max_digits=10, decimal_places=6, help_text='纬度', allow_null=True)
+    verified = serializers.BooleanField(help_text='是否认证')
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
 
     def get_district_name(self, obj):
@@ -628,6 +637,7 @@ class ApartmentDetailSerializer(serializers.Serializer):
     min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     verified = serializers.BooleanField(help_text='是否认证')
     is_favorite = serializers.SerializerMethodField(help_text='当前用户是否已收藏')
+    landlord_info = serializers.SerializerMethodField(help_text='商家信息')
     room_types = serializers.SerializerMethodField(help_text='房型卡片列表')
 
     def get_district_name(self, obj):
@@ -648,6 +658,17 @@ class ApartmentDetailSerializer(serializers.Serializer):
 
     def get_electric_fee_label(self, obj):
         return get_dict_label('fee_type', obj.electric_fee)
+
+    def get_landlord_info(self, obj):
+        landlord = obj.landlord
+        active_count = obj.__class__.objects.filter(
+            landlord=landlord,
+            status='published',
+        ).count()
+        return {
+            'verified_phone': bool(landlord.phone),
+            'active_listing_count': active_count,
+        }
 
     def get_room_types(self, obj):
         room_types = obj.room_types.all().order_by('sort', 'id')

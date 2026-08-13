@@ -1,4 +1,4 @@
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { uploadImage } from '@/api/upload'
 
 export interface RoomTypeFormItem {
@@ -9,6 +9,9 @@ export interface RoomTypeFormItem {
   layout_type: string
   window_type: string
   floor: number | undefined
+  area: number | undefined
+  orientation: string
+  available_date: string
   rental_plans: RentalPlanFormItem[]
 }
 
@@ -26,11 +29,64 @@ export interface ApartmentForm {
   street_id: number | undefined
   detail_address: string
   contact_phone: string
+  property_fee: number | undefined
+  water_fee: string
+  electric_fee: string
+  service_fee: number | undefined
+  other_fees: string
   room_types: RoomTypeFormItem[]
 }
 
+const DRAFT_KEY = 'publish_draft'
+const COMPRESS_MAX_LONG_SIDE = 2000
+const DRAFT_DEBOUNCE_MS = 30000
+
+function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        let { width, height } = img
+        const longSide = Math.max(width, height)
+        if (longSide <= COMPRESS_MAX_LONG_SIDE) {
+          resolve(file)
+          return
+        }
+        const ratio = COMPRESS_MAX_LONG_SIDE / longSide
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(file)
+          return
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+        const mimeType = file.type === 'image/png' ? 'image/jpeg' : 'image/webp'
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob)
+            } else {
+              resolve(file)
+            }
+          },
+          mimeType,
+          0.85,
+        )
+      }
+      img.onerror = () => resolve(file)
+      img.src = reader.result as string
+    }
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export function useApartmentForm() {
-  // ================= 表单数据 =================
   const form = reactive<ApartmentForm>({
     name: '',
     cover_image: '',
@@ -39,10 +95,14 @@ export function useApartmentForm() {
     street_id: undefined,
     detail_address: '',
     contact_phone: '',
+    property_fee: undefined,
+    water_fee: '',
+    electric_fee: '',
+    service_fee: undefined,
+    other_fees: '',
     room_types: [],
   })
 
-  // ================= 表单校验错误 =================
   const formErrors = reactive<Record<string, string>>({})
   const roomFormErrors = reactive<Record<string, string>>({})
   const rentalPlanErrors = ref<Record<number, Record<string, string>>>({})
@@ -56,7 +116,6 @@ export function useApartmentForm() {
     }
   }
 
-  // 主表单字段变更时清除对应错误
   watch(() => form.name, () => { delete formErrors.name })
   watch(() => form.cover_image, () => { delete formErrors.cover_image })
   watch(() => form.description, () => { delete formErrors.description })
@@ -66,7 +125,6 @@ export function useApartmentForm() {
   watch(() => form.contact_phone, () => { delete formErrors.contact_phone })
   watch(() => form.room_types.length, () => { if (form.room_types.length > 0) delete formErrors.room_types })
 
-  // ================= 行政区级联值绑定 =================
   const districtValue = ref<{ district_id?: number; street_id?: number }>({
     district_id: form.district_id,
     street_id: form.street_id,
@@ -77,7 +135,6 @@ export function useApartmentForm() {
     form.street_id = val.street_id
   }, { deep: true })
 
-  // ================= 图片上传 =================
   const coverUploader = ref<HTMLInputElement | null>(null)
   const uploadingCover = ref(false)
 
@@ -101,11 +158,11 @@ export function useApartmentForm() {
 
     uploadingCover.value = true
     try {
-      const res = await uploadImage(file)
+      const compressed = await compressImage(file)
+      const res = await uploadImage(new File([compressed], file.name, { type: compressed.type || file.type }))
       form.cover_image = res.url
       showToast('上传成功')
     } catch {
-      // 错误已在 request 拦截器中 toast
     } finally {
       uploadingCover.value = false
       target.value = ''
@@ -116,7 +173,6 @@ export function useApartmentForm() {
     form.cover_image = ''
   }
 
-  // ================= 房型弹窗 =================
   const showRoomModal = ref(false)
   const isEditingRoom = ref(false)
   const editingRoomIndex = ref(-1)
@@ -128,19 +184,31 @@ export function useApartmentForm() {
     layout_type: '',
     window_type: '',
     floor: undefined,
+    area: undefined,
+    orientation: '',
+    available_date: '',
     rental_plans: [],
   })
 
-  // 房型表单字段变更时清除对应错误
   watch(() => roomForm.name, () => { delete roomFormErrors.name })
   watch(() => roomForm.images.length, () => { if (roomForm.images.length > 0) delete roomFormErrors.images })
   watch(() => roomForm.layout_type, () => { delete roomFormErrors.layout_type })
   watch(() => roomForm.window_type, () => { delete roomFormErrors.window_type })
   watch(() => roomForm.floor, () => { delete roomFormErrors.floor })
+  watch(() => roomForm.area, () => { delete roomFormErrors.area })
+  watch(() => roomForm.orientation, () => { delete roomFormErrors.orientation })
   watch(() => roomForm.rental_plans.length, () => { if (roomForm.rental_plans.length > 0) delete roomFormErrors.rental_plans })
 
   const roomImageUploader = ref<HTMLInputElement | null>(null)
   const uploadingRoomImage = ref(false)
+
+  interface PendingRoomImage {
+    file: File
+    status: 'uploading' | 'failed'
+    error?: string
+  }
+
+  const pendingRoomImages = ref<PendingRoomImage[]>([])
 
   function openAddRoom() {
     isEditingRoom.value = false
@@ -160,8 +228,12 @@ export function useApartmentForm() {
       layout_type: room.layout_type,
       window_type: room.window_type,
       floor: room.floor,
+      area: room.area,
+      orientation: room.orientation || '',
+      available_date: room.available_date || '',
       rental_plans: room.rental_plans.map(p => ({ ...p })),
     })
+    pendingRoomImages.value = []
     showRoomModal.value = true
   }
 
@@ -172,7 +244,11 @@ export function useApartmentForm() {
     roomForm.layout_type = ''
     roomForm.window_type = ''
     roomForm.floor = undefined
+    roomForm.area = undefined
+    roomForm.orientation = ''
+    roomForm.available_date = ''
     roomForm.rental_plans = []
+    pendingRoomImages.value = []
     Object.keys(roomFormErrors).forEach(k => delete roomFormErrors[k])
     rentalPlanErrors.value = {}
   }
@@ -181,13 +257,18 @@ export function useApartmentForm() {
     showRoomModal.value = false
   }
 
-  // 房型图片上传
   function triggerRoomImageUpload() {
-    if (roomForm.images.length >= 5) {
+    if (roomForm.images.length + pendingRoomImages.value.length >= 5) {
       showToast('最多上传 5 张图片')
       return
     }
     roomImageUploader.value?.click()
+  }
+
+  async function uploadSingleRoomImage(file: File) {
+    const compressed = await compressImage(file)
+    const res = await uploadImage(new File([compressed], file.name, { type: compressed.type || file.type }))
+    roomForm.images.push(res.url)
   }
 
   async function onRoomImageChange(e: Event) {
@@ -195,7 +276,7 @@ export function useApartmentForm() {
     const files = Array.from(target.files || [])
     if (files.length === 0) return
 
-    const remainingSlots = 5 - roomForm.images.length
+    const remainingSlots = 5 - roomForm.images.length - pendingRoomImages.value.length
     if (files.length > remainingSlots) {
       showToast(`最多上传 5 张图片，当前还可上传 ${remainingSlots} 张`)
       target.value = ''
@@ -219,36 +300,79 @@ export function useApartmentForm() {
       return
     }
 
-    uploadingRoomImage.value = true
-    let successCount = 0
-    try {
-      for (const file of validFiles) {
-        try {
-          const res = await uploadImage(file)
-          roomForm.images.push(res.url)
-          successCount++
-        } catch {
-          showToast(`${file.name} 上传失败`)
-        }
-      }
-      if (successCount > 0) {
-        showToast(successCount === validFiles.length
-          ? `成功上传 ${successCount} 张图片`
-          : `${successCount} 张上传成功，${validFiles.length - successCount} 张失败`)
-      }
-    } catch {
-      // 错误已在 request 拦截器中 toast
-    } finally {
-      uploadingRoomImage.value = false
-      target.value = ''
+    for (const file of validFiles) {
+      const pending: PendingRoomImage = { file, status: 'uploading' }
+      pendingRoomImages.value.push(pending)
     }
+
+    uploadingRoomImage.value = true
+    for (const pending of pendingRoomImages.value) {
+      try {
+        await uploadSingleRoomImage(pending.file)
+        pendingRoomImages.value = pendingRoomImages.value.filter(p => p !== pending)
+      } catch {
+        pending.status = 'failed'
+        pending.error = '上传失败'
+      }
+    }
+    uploadingRoomImage.value = false
+
+    const failedCount = pendingRoomImages.value.filter(p => p.status === 'failed').length
+    const successCount = validFiles.length - failedCount
+    if (successCount > 0 && failedCount > 0) {
+      showToast(`${successCount} 张上传成功，${failedCount} 张失败`)
+    } else if (failedCount > 0) {
+      showToast(`全部 ${failedCount} 张上传失败`)
+    }
+
+    target.value = ''
+  }
+
+  async function retryRoomImage(pending: PendingRoomImage) {
+    pending.status = 'uploading'
+    pending.error = undefined
+    try {
+      await uploadSingleRoomImage(pending.file)
+      pendingRoomImages.value = pendingRoomImages.value.filter(p => p !== pending)
+    } catch {
+      pending.status = 'failed'
+      pending.error = '上传失败'
+    }
+  }
+
+  function removePendingRoomImage(index: number) {
+    pendingRoomImages.value.splice(index, 1)
   }
 
   function removeRoomImage(index: number) {
     roomForm.images.splice(index, 1)
   }
 
-  // 租金方案
+  const dragIndex = ref(-1)
+  const dragOverIndex = ref(-1)
+
+  function onDragStart(index: number) {
+    dragIndex.value = index
+  }
+
+  function onDragOver(index: number) {
+    dragOverIndex.value = index
+  }
+
+  function onDrop(index: number) {
+    if (dragIndex.value < 0 || dragIndex.value === index) {
+      dragIndex.value = -1
+      dragOverIndex.value = -1
+      return
+    }
+    const images = [...roomForm.images]
+    const [moved] = images.splice(dragIndex.value, 1)
+    images.splice(index, 0, moved)
+    roomForm.images = images
+    dragIndex.value = -1
+    dragOverIndex.value = -1
+  }
+
   function addRentalPlan() {
     roomForm.rental_plans.push({
       lease_term: '',
@@ -261,7 +385,6 @@ export function useApartmentForm() {
     roomForm.rental_plans.splice(index, 1)
   }
 
-  // 保存房型
   function saveRoom() {
     Object.keys(roomFormErrors).forEach(k => delete roomFormErrors[k])
     rentalPlanErrors.value = {}
@@ -285,6 +408,17 @@ export function useApartmentForm() {
     }
     if (roomForm.floor === undefined || roomForm.floor === null) {
       roomFormErrors.floor = '请输入楼层'
+      hasError = true
+    }
+    if (roomForm.area === undefined || roomForm.area === null) {
+      roomFormErrors.area = '请输入房型面积'
+      hasError = true
+    } else if (roomForm.area < 0.5 || roomForm.area > 500) {
+      roomFormErrors.area = '面积范围 0.5-500 ㎡'
+      hasError = true
+    }
+    if (!roomForm.orientation) {
+      roomFormErrors.orientation = '请选择朝向'
       hasError = true
     }
     if (roomForm.rental_plans.length === 0) {
@@ -322,6 +456,9 @@ export function useApartmentForm() {
       layout_type: roomForm.layout_type,
       window_type: roomForm.window_type,
       floor: Number(roomForm.floor),
+      area: roomForm.area !== undefined && roomForm.area !== null ? Number(roomForm.area) : undefined,
+      orientation: roomForm.orientation,
+      available_date: roomForm.available_date || '',
       rental_plans: roomForm.rental_plans.map(p => ({
         lease_term: p.lease_term,
         monthly_rent: Number(p.monthly_rent),
@@ -339,7 +476,6 @@ export function useApartmentForm() {
     closeRoomModal()
   }
 
-  // 删除房型
   async function removeRoomType(index: number) {
     try {
       await showConfirmDialog({
@@ -349,11 +485,9 @@ export function useApartmentForm() {
       form.room_types.splice(index, 1)
       showToast('已删除')
     } catch {
-      // 取消删除
     }
   }
 
-  // ================= 表单校验与提交 =================
   const canSubmit = computed(() => {
     return (
       form.name.trim() &&
@@ -412,12 +546,16 @@ export function useApartmentForm() {
       formErrors.room_types = '请至少添加 1 组房型'
       hasError = true
     }
+    if (form.other_fees.trim().length > 100) {
+      formErrors.other_fees = '其他费用不能超过 100 字'
+      hasError = true
+    }
 
     return !hasError
   }
 
   function buildPayload() {
-    return {
+    const payload: Record<string, unknown> = {
       name: form.name.trim(),
       cover_image: form.cover_image,
       description: form.description.trim(),
@@ -425,6 +563,11 @@ export function useApartmentForm() {
       street_id: form.street_id as number,
       detail_address: form.detail_address.trim(),
       contact_phone: form.contact_phone.trim(),
+      property_fee: form.property_fee !== undefined && form.property_fee !== null ? Number(form.property_fee) : undefined,
+      water_fee: form.water_fee || undefined,
+      electric_fee: form.electric_fee || undefined,
+      service_fee: form.service_fee !== undefined && form.service_fee !== null ? Number(form.service_fee) : undefined,
+      other_fees: form.other_fees.trim() || undefined,
       room_types: form.room_types.map(r => ({
         name: r.name,
         images: r.images,
@@ -432,6 +575,9 @@ export function useApartmentForm() {
         layout_type: r.layout_type,
         window_type: r.window_type,
         floor: r.floor as number,
+        area: r.area !== undefined && r.area !== null ? Number(r.area) : undefined,
+        orientation: r.orientation || undefined,
+        available_date: r.available_date || undefined,
         rental_plans: r.rental_plans.map(p => ({
           lease_term: p.lease_term,
           monthly_rent: p.monthly_rent as number,
@@ -439,8 +585,85 @@ export function useApartmentForm() {
         })),
       })),
     }
+    return payload
   }
 
+  // ================= 草稿 =================
+  const draftLoaded = ref(false)
+  const showDraftDialog = ref(false)
+
+  function saveDraft() {
+    try {
+      const draftData = JSON.parse(JSON.stringify(form))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+    } catch {
+    }
+  }
+
+  let draftTimer: ReturnType<typeof setTimeout> | null = null
+
+  watch(form, () => {
+    if (draftTimer) clearTimeout(draftTimer)
+    draftTimer = setTimeout(saveDraft, DRAFT_DEBOUNCE_MS)
+  }, { deep: true })
+
+  function checkDraft() {
+    if (draftLoaded.value) return
+    draftLoaded.value = true
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        const draft = JSON.parse(raw) as ApartmentForm
+        if (draft.name || draft.cover_image || draft.description || draft.room_types.length > 0) {
+          showDraftDialog.value = true
+        }
+      }
+    } catch {
+    }
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        const draft = JSON.parse(raw) as ApartmentForm
+        Object.assign(form, {
+          name: draft.name || '',
+          cover_image: draft.cover_image || '',
+          description: draft.description || '',
+          district_id: draft.district_id ?? undefined,
+          street_id: draft.street_id ?? undefined,
+          detail_address: draft.detail_address || '',
+          contact_phone: draft.contact_phone || '',
+          property_fee: draft.property_fee ?? undefined,
+          water_fee: draft.water_fee || '',
+          electric_fee: draft.electric_fee || '',
+          service_fee: draft.service_fee ?? undefined,
+          other_fees: draft.other_fees || '',
+          room_types: draft.room_types || [],
+        })
+        if (draft.district_id !== undefined) {
+          districtValue.value = {
+            district_id: draft.district_id,
+            street_id: draft.street_id,
+          }
+        }
+      }
+    } catch {
+    }
+    showDraftDialog.value = false
+  }
+
+  function discardDraft() {
+    clearDraft()
+    showDraftDialog.value = false
+  }
+
+  function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY)
+  }
+
+  // ================= 返回 =================
   return {
     form,
     formErrors,
@@ -459,13 +682,21 @@ export function useApartmentForm() {
     roomForm,
     roomImageUploader,
     uploadingRoomImage,
+    pendingRoomImages,
     openAddRoom,
     openEditRoom,
     resetRoomForm,
     closeRoomModal,
     triggerRoomImageUpload,
     onRoomImageChange,
+    retryRoomImage,
+    removePendingRoomImage,
     removeRoomImage,
+    dragIndex,
+    dragOverIndex,
+    onDragStart,
+    onDragOver,
+    onDrop,
     addRentalPlan,
     removeRentalPlan,
     saveRoom,
@@ -473,5 +704,10 @@ export function useApartmentForm() {
     canSubmit,
     validateForm,
     buildPayload,
+    showDraftDialog,
+    checkDraft,
+    restoreDraft,
+    discardDraft,
+    clearDraft,
   }
 }

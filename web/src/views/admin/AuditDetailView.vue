@@ -13,7 +13,7 @@ import { getDistrictName, getStreetName } from '@/utils/districtMaps'
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getAdminAuditDetail, approveAudit, rejectAudit } from '@/api/admin'
+import { getAdminAuditDetail, approveAudit, rejectAudit, verifyApartment } from '@/api/admin'
 import { useUiStore } from '@/stores/ui'
 import type { AuditRecord } from '@/types'
 
@@ -26,6 +26,8 @@ const detail = ref<AuditRecord | null>(null)
 const loading = ref(false)
 const rejectReason = ref('')
 const showRejectForm = ref(false)
+const approveWithVerify = ref(false)
+const quickReasons = ['图片非实拍', '信息不实', '价格异常', '重复房源']
 
 async function loadDetail() {
   loading.value = true
@@ -46,13 +48,15 @@ function goBack() {
 // 通过
 async function onApprove() {
   try {
+    const verifyMsg = approveWithVerify.value ? '，并标记为平台核验' : ''
     await showConfirmDialog({
       title: '确认通过',
-      message: '审核通过后，房源将正式上架或变更生效，确定继续吗？',
+      message: `审核通过后，房源将正式上架或变更生效${verifyMsg}，确定继续吗？`,
     })
     uiStore.showLoading('处理中...')
-    await approveAudit(auditId.value)
+    await approveAudit(auditId.value, approveWithVerify.value)
     showToast('已通过')
+    approveWithVerify.value = false
     await loadDetail()
   } catch (err: any) {
     if (err?.message === 'cancel') {
@@ -288,18 +292,34 @@ onMounted(() => {
       </div>
 
       <!-- 底部操作栏 -->
-      <div v-if="detail.status === 'pending' && !showRejectForm" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-3 flex gap-3 safe-area-bottom">
-        <van-button type="danger" block round plain class="flex-1" @click="onShowReject">
-          驳回
-        </van-button>
-        <van-button type="success" block round class="flex-1" @click="onApprove">
-          通过
-        </van-button>
+      <div v-if="detail.status === 'pending' && !showRejectForm" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-3 flex flex-col gap-2 safe-area-bottom">
+        <div class="flex items-center justify-center">
+          <van-checkbox v-model="approveWithVerify" icon-size="14px" class="text-xs">同时标记为平台核验</van-checkbox>
+        </div>
+        <div class="flex gap-3">
+          <van-button type="danger" block round plain class="flex-1" @click="onShowReject">
+            驳回
+          </van-button>
+          <van-button type="success" block round class="flex-1" @click="onApprove">
+            通过
+          </van-button>
+        </div>
       </div>
 
       <!-- 驳回表单 -->
       <div v-if="showRejectForm" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-3 safe-area-bottom">
         <div class="text-sm font-bold mb-2">驳回原因（必填）</div>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <van-tag
+            v-for="reason in quickReasons"
+            :key="reason"
+            :type="rejectReason === reason ? 'primary' : 'default'"
+            size="medium"
+            @click="rejectReason = reason"
+          >
+            {{ reason }}
+          </van-tag>
+        </div>
         <van-field
           v-model="rejectReason"
           type="textarea"

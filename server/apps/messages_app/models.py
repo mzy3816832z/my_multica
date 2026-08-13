@@ -9,6 +9,8 @@ class Message(BaseModel):
     TYPE_CHOICES = [
         ('first_rejected', '首次审核驳回'),
         ('change_rejected', '变更审核驳回'),
+        ('audit_approved', '审核通过'),
+        ('system', '系统通知'),
     ]
 
     user = models.ForeignKey(
@@ -32,6 +34,8 @@ class Message(BaseModel):
     related_apartment = models.ForeignKey(
         'apartments.Apartment',
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='related_messages',
         verbose_name='关联房源',
     )

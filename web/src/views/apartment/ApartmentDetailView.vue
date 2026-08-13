@@ -5,11 +5,12 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { getApartmentDetail } from '@/api/apartment'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment } from '@/types'
+import type { Apartment, BrowseHistoryItem } from '@/types'
 import FeeDetailCard from '@/components/business/FeeDetailCard.vue'
 import FacilityGroup from '@/components/business/FacilityGroup.vue'
 import PhoneActionSheet from '@/components/business/PhoneActionSheet.vue'
 import LocationModule from '@/components/business/LocationModule.vue'
+import ShareSheet from '@/components/business/ShareSheet.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const apartment = ref<Apartment | null>(null)
 const loading = ref(false)
 const isOffline = ref(false)
 const phoneSheetVisible = ref(false)
+const shareSheetVisible = ref(false)
 
 const allFacilities = computed<string[]>(() => {
   if (!apartment.value?.room_types) return []
@@ -45,6 +47,7 @@ async function fetchDetail() {
   try {
     const aptRes = await getApartmentDetail(apartmentId.value)
     apartment.value = aptRes
+    saveBrowseHistory(aptRes)
   } catch (err: any) {
     if (err?.code === 410001) {
       isOffline.value = true
@@ -52,6 +55,36 @@ async function fetchDetail() {
   } finally {
     loading.value = false
     uiStore.hideLoading()
+  }
+}
+
+const HISTORY_KEY = 'browse_history'
+const MAX_HISTORY = 50
+
+function saveBrowseHistory(apt: Apartment) {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    let list: BrowseHistoryItem[] = []
+    if (raw) {
+      list = JSON.parse(raw)
+      if (!Array.isArray(list)) list = []
+    }
+    list = list.filter(item => item.apartment_id !== apt.id)
+    list.unshift({
+      apartment_id: apt.id,
+      name: apt.name,
+      cover_image: apt.cover_image || '',
+      district_name: apt.district_name || '',
+      street_name: apt.street_name || '',
+      min_monthly_rent: apt.min_monthly_rent ?? null,
+      timestamp: Date.now(),
+    })
+    if (list.length > MAX_HISTORY) {
+      list = list.slice(0, MAX_HISTORY)
+    }
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list))
+  } catch {
+    // 忽略存储错误
   }
 }
 
@@ -118,13 +151,21 @@ onMounted(() => {
       @click-left="goBack"
     >
       <template #right>
-        <van-icon
-          v-if="authStore.isTenant && !isOffline"
-          :name="apartment?.is_favorite ? 'star' : 'star-o'"
-          :class="apartment?.is_favorite ? 'text-warning' : 'text-gray-400'"
-          class="text-xl"
-          @click="toggleFavorite"
-        />
+        <div class="flex items-center gap-3">
+          <van-icon
+            v-if="!isOffline"
+            name="share-o"
+            class="text-xl text-gray-600 cursor-pointer"
+            @click="shareSheetVisible = true"
+          />
+          <van-icon
+            v-if="authStore.isTenant && !isOffline"
+            :name="apartment?.is_favorite ? 'star' : 'star-o'"
+            :class="apartment?.is_favorite ? 'text-warning' : 'text-gray-400'"
+            class="text-xl"
+            @click="toggleFavorite"
+          />
+        </div>
       </template>
     </van-nav-bar>
 
@@ -164,7 +205,10 @@ onMounted(() => {
 
         <div class="detail-info">
           <div class="bg-white p-4">
-            <h1 class="text-lg font-bold text-gray-900">{{ apartment?.name }}</h1>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold text-gray-900">{{ apartment?.name }}</h1>
+              <van-tag v-if="apartment?.verified" type="success" size="medium">平台核验</van-tag>
+            </div>
             <div class="flex items-center mt-2 text-sm text-gray-500">
               <van-icon name="location-o" class="mr-1" />
               <span>
@@ -182,6 +226,21 @@ onMounted(() => {
               <span v-if="apartment?.min_monthly_rent != null" class="text-danger text-xl font-bold">¥{{ apartment.min_monthly_rent }}</span>
               <span v-else class="text-sm text-gray-400">暂无报价</span>
               <span v-if="apartment?.min_monthly_rent != null" class="text-sm text-gray-500 ml-1">/月起</span>
+            </div>
+          </div>
+
+          <div v-if="apartment?.landlord_info" class="mt-3 bg-white p-4">
+            <h2 class="text-base font-bold text-gray-900 mb-2">商家信息</h2>
+            <div class="flex items-center gap-4 text-sm text-gray-600">
+              <div class="flex items-center gap-1">
+                <van-icon name="phone-o" />
+                <span>{{ apartment.landlord_info.verified_phone ? '已验证手机号' : '手机号未验证' }}</span>
+                <van-tag v-if="apartment.landlord_info.verified_phone" type="success" class="ml-1 text-xs">已认证</van-tag>
+              </div>
+              <div class="flex items-center gap-1">
+                <van-icon name="home-o" />
+                <span>在架房源 {{ apartment.landlord_info.active_listing_count }} 套</span>
+              </div>
             </div>
           </div>
 
@@ -251,6 +310,14 @@ onMounted(() => {
       <PhoneActionSheet
         v-model:visible="phoneSheetVisible"
         :phone="apartment?.contact_phone || ''"
+      />
+
+      <ShareSheet
+        v-model:visible="shareSheetVisible"
+        :apartment-id="apartment?.id || 0"
+        :apartment-name="apartment?.name || ''"
+        :cover-image="apartment?.cover_image || ''"
+        :price="apartment?.min_monthly_rent"
       />
     </template>
   </div>

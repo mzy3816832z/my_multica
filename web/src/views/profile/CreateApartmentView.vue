@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -26,12 +27,20 @@ const {
   roomForm,
   roomImageUploader,
   uploadingRoomImage,
+  pendingRoomImages,
   openAddRoom,
   openEditRoom,
   closeRoomModal,
   triggerRoomImageUpload,
   onRoomImageChange,
+  retryRoomImage,
+  removePendingRoomImage,
   removeRoomImage,
+  dragIndex,
+  dragOverIndex,
+  onDragStart,
+  onDragOver,
+  onDrop,
   addRentalPlan,
   removeRentalPlan,
   saveRoom,
@@ -39,6 +48,11 @@ const {
   canSubmit,
   validateForm,
   buildPayload,
+  showDraftDialog,
+  checkDraft,
+  restoreDraft,
+  discardDraft,
+  clearDraft,
 } = useApartmentForm()
 
 async function onSubmit() {
@@ -49,23 +63,25 @@ async function onSubmit() {
 
   uiStore.showLoading('提交中...')
   try {
-    await createApartment(buildPayload())
+    await createApartment(buildPayload() as any)
+    clearDraft()
     showToast('提交成功，等待审核')
     router.replace('/profile/my-apartments')
   } catch {
-    // 错误已在 request 拦截器中 toast
   } finally {
     uiStore.hideLoading()
   }
 }
+
+onMounted(() => {
+  checkDraft()
+})
 </script>
 
 <template>
   <div class="create-apartment-page">
-    <!-- 顶部导航 -->
     <van-nav-bar title="发布房源" left-arrow @click-left="router.back()" fixed placeholder />
 
-    <!-- 表单内容 -->
     <div class="form-container">
       <div class="p-4 space-y-4">
       <!-- 公寓名称 -->
@@ -85,6 +101,10 @@ async function onSubmit() {
       <!-- 总览图上传 -->
       <div class="bg-white rounded-xl p-4">
         <div class="text-sm font-bold text-gray-900 mb-2">公寓总览图 <span class="text-danger">*</span></div>
+        <div class="text-xs text-orange-500 mb-2 flex items-center gap-1">
+          <van-icon name="warning-o" />
+          <span>请上传实拍图，过度美化或网图将被驳回</span>
+        </div>
         <div v-if="form.cover_image" class="relative w-full h-44 rounded-lg overflow-hidden">
           <van-image :src="form.cover_image" fit="cover" class="w-full h-full" />
           <div class="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center" @click="removeCover">
@@ -151,6 +171,56 @@ async function onSubmit() {
         <div v-if="formErrors.contact_phone" class="text-danger text-xs mt-1">{{ formErrors.contact_phone }}</div>
       </div>
 
+      <!-- 费用信息（选填） -->
+      <div class="bg-white rounded-xl p-4 space-y-3">
+        <div class="text-sm font-bold text-gray-900">费用信息</div>
+
+        <div>
+          <div class="text-sm text-gray-600 mb-1">物业费（元/月）</div>
+          <van-field
+            v-model.number="form.property_fee"
+            type="digit"
+            placeholder="请输入物业费（0 表示免物业费）"
+            :border="false"
+            class="bg-gray-50 rounded-lg"
+          />
+        </div>
+
+        <div>
+          <div class="text-sm text-gray-600 mb-1">水费</div>
+          <DictSelect category="fee_type" v-model="form.water_fee" placeholder="请选择水费类型" title="选择水费类型" />
+        </div>
+
+        <div>
+          <div class="text-sm text-gray-600 mb-1">电费</div>
+          <DictSelect category="fee_type" v-model="form.electric_fee" placeholder="请选择电费类型" title="选择电费类型" />
+        </div>
+
+        <div>
+          <div class="text-sm text-gray-600 mb-1">服务费（元/月）</div>
+          <van-field
+            v-model.number="form.service_fee"
+            type="digit"
+            placeholder="请输入服务费"
+            :border="false"
+            class="bg-gray-50 rounded-lg"
+          />
+        </div>
+
+        <div>
+          <div class="text-sm text-gray-600 mb-1">其他费用</div>
+          <van-field
+            v-model="form.other_fees"
+            placeholder="请输入其他费用说明（不超过100字）"
+            maxlength="100"
+            show-word-limit
+            :border="false"
+            class="bg-gray-50 rounded-lg"
+          />
+          <div v-if="formErrors.other_fees" class="text-danger text-xs mt-1">{{ formErrors.other_fees }}</div>
+        </div>
+      </div>
+
       <!-- 房型列表 -->
       <div class="bg-white rounded-xl p-4">
         <div class="flex items-center justify-between mb-3">
@@ -158,7 +228,6 @@ async function onSubmit() {
           <span class="text-xs text-gray-400">至少添加 1 组</span>
         </div>
 
-        <!-- 已添加房型卡片 -->
         <div v-if="form.room_types.length > 0" class="space-y-3 mb-3">
           <div
             v-for="(room, index) in form.room_types"
@@ -183,7 +252,6 @@ async function onSubmit() {
           </div>
         </div>
 
-        <!-- 添加房型按钮 -->
         <van-button type="primary" plain block round icon="plus" @click="openAddRoom">
           添加房型
         </van-button>
@@ -202,13 +270,11 @@ async function onSubmit() {
     <!-- 房型弹窗 -->
     <van-popup v-model:show="showRoomModal" position="bottom" round :style="{ height: '90%' }" class="room-modal">
       <div class="flex flex-col h-full">
-        <!-- 弹窗头部 -->
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <span class="text-base font-bold">{{ isEditingRoom ? '编辑房型' : '添加房型' }}</span>
           <van-icon name="cross" class="text-gray-400 text-lg" @click="closeRoomModal" />
         </div>
 
-        <!-- 弹窗内容 -->
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
           <!-- 房型名称 -->
           <div>
@@ -227,21 +293,53 @@ async function onSubmit() {
           <div>
             <div class="text-sm font-bold text-gray-900 mb-2">
               房型图片 <span class="text-danger">*</span>
-              <span class="text-xs text-gray-400 font-normal">（最多 5 张）</span>
+              <span class="text-xs text-gray-400 font-normal">（最多 5 张，支持拖拽排序）</span>
+            </div>
+            <div class="text-xs text-orange-500 mb-2 flex items-center gap-1">
+              <van-icon name="warning-o" />
+              <span>请上传实拍图，过度美化或网图将被驳回</span>
             </div>
             <div class="flex flex-wrap gap-2">
               <div
                 v-for="(img, idx) in roomForm.images"
-                :key="idx"
-                class="relative w-20 h-20 rounded-lg overflow-hidden"
+                :key="'img-' + idx"
+                :class="[
+                  'relative w-20 h-20 rounded-lg overflow-hidden',
+                  dragOverIndex === idx ? 'ring-2 ring-primary' : '',
+                  dragIndex === idx ? 'opacity-50' : '',
+                ]"
+                :draggable="true"
+                @dragstart="onDragStart(idx)"
+                @dragover.prevent="onDragOver(idx)"
+                @drop="onDrop(idx)"
+                @dragend="dragIndex = -1; dragOverIndex = -1"
               >
                 <van-image :src="img" fit="cover" class="w-full h-full" />
                 <div class="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center" @click="removeRoomImage(idx)">
                   <van-icon name="cross" class="text-white text-xs" />
                 </div>
               </div>
+              <!-- 上传中/失败的文件 -->
               <div
-                v-if="roomForm.images.length < 5"
+                v-for="(pending, pIdx) in pendingRoomImages"
+                :key="'pending-' + pIdx"
+                class="relative w-20 h-20 rounded-lg overflow-hidden border-2"
+                :class="pending.status === 'failed' ? 'border-danger' : 'border-primary'"
+              >
+                <van-icon v-if="pending.status === 'uploading'" name="loading" class="absolute inset-0 m-auto text-primary animate-spin" size="24" />
+                <template v-else>
+                  <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-1">
+                    <span class="text-danger text-xs text-center px-1">上传失败</span>
+                    <span class="text-primary text-xs" @click="retryRoomImage(pending)">重试</span>
+                  </div>
+                  <div class="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center" @click="removePendingRoomImage(pIdx)">
+                    <van-icon name="cross" class="text-white text-xs" />
+                  </div>
+                </template>
+              </div>
+              <!-- 上传按钮 -->
+              <div
+                v-if="roomForm.images.length + pendingRoomImages.length < 5"
                 class="w-20 h-20 bg-gray-50 rounded-lg flex flex-col items-center justify-center border border-dashed border-gray-300"
                 @click="triggerRoomImageUpload"
               >
@@ -250,7 +348,6 @@ async function onSubmit() {
                   <van-icon name="photograph" class="text-gray-400 text-lg" />
                   <span class="text-xs text-gray-400 mt-1">上传</span>
                 </template>
-                <span v-if="uploadingRoomImage" class="text-xs text-primary mt-1">上传中</span>
               </div>
             </div>
             <input ref="roomImageUploader" type="file" accept="image/jpeg,image/png,image/webp" multiple class="hidden" @change="onRoomImageChange" />
@@ -282,6 +379,37 @@ async function onSubmit() {
               class="bg-gray-50 rounded-lg"
             />
             <div v-if="roomFormErrors.floor" class="text-danger text-xs mt-1">{{ roomFormErrors.floor }}</div>
+          </div>
+
+          <!-- 面积 -->
+          <div>
+            <div class="text-sm font-bold text-gray-900 mb-2">面积 <span class="text-danger">*</span></div>
+            <van-field
+              v-model.number="roomForm.area"
+              type="digit"
+              placeholder="请输入面积（0.5-500 ㎡）"
+              :border="false"
+              class="bg-gray-50 rounded-lg"
+            />
+            <div v-if="roomFormErrors.area" class="text-danger text-xs mt-1">{{ roomFormErrors.area }}</div>
+          </div>
+
+          <!-- 朝向 -->
+          <div>
+            <div class="text-sm font-bold text-gray-900 mb-2">朝向 <span class="text-danger">*</span></div>
+            <DictSelect category="orientation" v-model="roomForm.orientation" placeholder="请选择朝向" title="选择朝向" />
+            <div v-if="roomFormErrors.orientation" class="text-danger text-xs mt-1">{{ roomFormErrors.orientation }}</div>
+          </div>
+
+          <!-- 可入住时间 -->
+          <div>
+            <div class="text-sm font-bold text-gray-900 mb-2">可入住时间</div>
+            <input
+              type="date"
+              v-model="roomForm.available_date"
+              class="w-full bg-gray-50 rounded-lg px-3 py-2.5 text-sm border-0 outline-none text-gray-900"
+              :min="new Date().toISOString().split('T')[0]"
+            />
           </div>
 
           <!-- 设施 -->
@@ -342,7 +470,6 @@ async function onSubmit() {
           </div>
         </div>
 
-        <!-- 弹窗底部 -->
         <div class="p-4 border-t border-gray-100 safe-area-bottom">
           <van-button type="primary" block round @click="saveRoom">
             {{ isEditingRoom ? '保存修改' : '确认添加' }}
@@ -351,6 +478,17 @@ async function onSubmit() {
       </div>
     </van-popup>
 
+    <!-- 草稿恢复提示 -->
+    <van-dialog
+      v-model:show="showDraftDialog"
+      title="恢复草稿"
+      message="检测到上次未完成的编辑，是否恢复？"
+      show-cancel-button
+      confirm-button-text="恢复"
+      cancel-button-text="丢弃"
+      @confirm="restoreDraft"
+      @cancel="discardDraft"
+    />
   </div>
 </template>
 

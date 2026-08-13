@@ -4,6 +4,7 @@
 import copy
 import logging
 from decimal import Decimal
+from math import radians, cos, sin, asin, sqrt
 
 from django.conf import settings
 from django.db import transaction
@@ -11,9 +12,9 @@ from django.db.models import F, Q, Case, When, Value, IntegerField
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from apps.apartments.models import Apartment, RentalPlan, RoomType
+from apps.apartments.models import Apartment, RentalPlan, RoomType, ApartmentViewLog
 from apps.apartments.serializers import (
     ApartmentCreateSerializer,
     ApartmentDetailSerializer,
@@ -26,13 +27,17 @@ from apps.apartments.serializers import (
     MerchantApartmentListSerializer,
     NearbyPoiSerializer,
     NearbyResponseSerializer,
+    MerchantStatsSerializer,
     RoomTypeDetailSerializer,
+    get_dict_label,
 )
 from apps.apartments.map_service import geocode, search_nearby_pois, build_static_map_url
 from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
 from apps.audits.models import AuditRecord
+from apps.metro.models import MetroStation
 from core.exceptions import BusinessException, NotFoundException, GoneException
 from core.pagination import StandardPagination
+from core.permissions import IsLandlord
 from core.response import ErrorCode, unified_response, UnifiedErrorResponseSerializer
 
 logger = logging.getLogger('apps')
@@ -41,6 +46,57 @@ logger = logging.getLogger('apps')
 # ============================================================
 # 公共房源接口（公开访问）
 # ============================================================
+
+METRO_RADIUS_KM = 1.5
+
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    lat1, lon1, lat2, lon2 = map(
+        radians,
+        [float(lat1), float(lon1), float(lat2), float(lon2)],
+    )
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    c = 2 * asin(sqrt(a))
+    return 6371 * c
+
+
+def _get_client_ip(request):
+    """
+    获取客户端 IP（优先取 X-Forwarded-For 第一个 IP，用于匿名 PV 去重）
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', 'unknown')
+
+
+def _record_apartment_view(apartment, request):
+    """
+    记录房源详情页 PV，按 (用户/匿名 IP + 天) 去重。
+    商家查看自己的房源不计入浏览量；记录失败不影响详情响应。
+    """
+    try:
+        user = request.user if request.user.is_authenticated else None
+        # 商家查看自己的房源不计入浏览量
+        if user and apartment.landlord_id == user.id:
+            return
+
+        if user:
+            dedupe_key = f'u:{user.id}'
+        else:
+            dedupe_key = f'a:{_get_client_ip(request)}'
+
+        today = timezone.localdate()
+        ApartmentViewLog.objects.get_or_create(
+            apartment=apartment,
+            dedupe_key=dedupe_key,
+            view_date=today,
+        )
+    except Exception:
+        logger.exception('[ApartmentView] record failed for apartment=%s', apartment.id)
+
 
 SORT_OPTIONS = {
     'latest': ['-updated_at'],
@@ -68,6 +124,7 @@ SORT_OPTIONS = {
         {'name': 'min_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最低月租金'},
         {'name': 'max_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最高月租金'},
         {'name': 'sort', 'in': 'query', 'schema': {'type': 'string'}, 'description': '排序方式：latest(默认) / price_asc / price_desc / area_desc / area_asc'},
+        {'name': 'metro_station_ids', 'in': 'query', 'schema': {'type': 'array', 'items': {'type': 'integer'}}, 'description': '地铁站点 ID 数组（多选），筛选距站点 ≤1.5km 的房源'},
         {'name': 'page', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '页码，默认 1'},
         {'name': 'page_size', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '每页条数，默认 10，最大 100'},
     ],
@@ -167,6 +224,39 @@ def apartment_list(request):
             queryset = queryset.filter(min_monthly_rent__lte=int(max_price))
         except ValueError:
             pass
+
+    metro_station_ids = request.query_params.get('metro_station_ids')
+    if metro_station_ids:
+        try:
+            station_ids = [int(x) for x in metro_station_ids.split(',') if x.strip()]
+        except ValueError:
+            station_ids = []
+
+        if station_ids:
+            stations = MetroStation.objects.filter(id__in=station_ids).values('id', 'longitude', 'latitude')
+            station_coords = [
+                (float(s['latitude']), float(s['longitude']))
+                for s in stations
+            ]
+
+            if station_coords:
+                candidates = list(
+                    queryset.filter(latitude__isnull=False, longitude__isnull=False)
+                    .values_list('id', 'latitude', 'longitude')
+                )
+
+                qualifying_ids = set()
+                for apt_id, apt_lat, apt_lon in candidates:
+                    apt_lat_f = float(apt_lat)
+                    apt_lon_f = float(apt_lon)
+                    for st_lat, st_lon in station_coords:
+                        if haversine_distance(st_lat, st_lon, apt_lat_f, apt_lon_f) <= METRO_RADIUS_KM:
+                            qualifying_ids.add(apt_id)
+                            break
+
+                queryset = queryset.filter(id__in=qualifying_ids)
+            else:
+                queryset = queryset.none()
 
     # 分页
     paginator = StandardPagination()
@@ -279,6 +369,8 @@ def apartment_detail(request, id):
     if apartment.min_area is None:
         backfill_apartment_min_area(apartment)
 
+    _record_apartment_view(apartment, request)
+
     serializer = ApartmentDetailSerializer(apartment, context={'request': request})
     return unified_response(data=serializer.data)
 
@@ -348,6 +440,108 @@ def room_type_detail(request, id):
     room_type.rental_plans.all()  # prefetch 已在序列化器中通过 context 控制，这里直接查
     serializer = RoomTypeDetailSerializer(room_type)
     return unified_response(data=serializer.data)
+
+
+def _build_compare_item(apartment):
+    """
+    构建单套公寓的简化对比数据，包含价格/面积/朝向/费用明细/设施列表。
+    设施与朝向标签从系统字典解析（缺失时回退到原始编码）。
+    """
+    orientations = []
+    facility_codes = set()
+    seen_orientations = set()
+    for rt in apartment.room_types.all().order_by('sort', 'id'):
+        if rt.orientation and rt.orientation not in seen_orientations:
+            seen_orientations.add(rt.orientation)
+            orientations.append(get_dict_label('window_orientation', rt.orientation))
+        for code in (rt.facilities or []):
+            facility_codes.add(code)
+
+    facilities = sorted(
+        get_dict_label('facility', code) for code in facility_codes
+    )
+
+    return {
+        'id': apartment.id,
+        'name': apartment.name,
+        'cover_image': apartment.cover_image,
+        'min_monthly_rent': apartment.min_monthly_rent,
+        'min_area': float(apartment.min_area) if apartment.min_area is not None else None,
+        'orientations': orientations,
+        'fees': {
+            'property_fee': apartment.property_fee,
+            'water_fee_label': get_dict_label('fee_type', apartment.water_fee),
+            'electric_fee_label': get_dict_label('fee_type', apartment.electric_fee),
+            'service_fee': apartment.service_fee,
+            'other_fees': apartment.other_fees or '',
+        },
+        'facilities': facilities,
+    }
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'code': {'type': 'integer'},
+                'message': {'type': 'string'},
+                'data': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'integer'},
+                            'name': {'type': 'string'},
+                            'cover_image': {'type': 'string'},
+                            'min_monthly_rent': {'type': 'integer', 'nullable': True},
+                            'min_area': {'type': 'number', 'nullable': True},
+                            'orientations': {'type': 'array', 'items': {'type': 'string'}},
+                            'fees': {'type': 'object'},
+                            'facilities': {'type': 'array', 'items': {'type': 'string'}},
+                        },
+                    },
+                },
+            },
+        },
+    },
+    summary='房源对比',
+    description='接收逗号分隔的房源 ID（2-3 个），返回并排展示所需的简化对比数据。',
+    tags=['公共房源'],
+    parameters=[
+        {'name': 'ids', 'in': 'query', 'schema': {'type': 'string'}, 'description': '房源 ID，逗号分隔（2-3 个）'},
+    ],
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def apartment_compare(request):
+    """
+    GET /api/v1/apartments/compare
+    房源对比：返回简化对比数据
+    """
+    ids_param = request.query_params.get('ids', '')
+    if not ids_param.strip():
+        raise BusinessException('请选择要对比的房源', code=ErrorCode.PARAM_ERROR)
+
+    try:
+        ids = [int(x) for x in ids_param.split(',') if x.strip()]
+    except ValueError:
+        raise BusinessException('参数 ids 格式不正确', code=ErrorCode.PARAM_ERROR)
+
+    if not ids:
+        raise BusinessException('请选择要对比的房源', code=ErrorCode.PARAM_ERROR)
+    if len(ids) < 2:
+        raise BusinessException('至少选择2套房源进行对比', code=ErrorCode.PARAM_ERROR)
+    if len(ids) > 3:
+        raise BusinessException('最多对比3套', code=ErrorCode.PARAM_ERROR)
+
+    apartments = Apartment.objects.filter(id__in=ids, status='published')
+    apt_map = {a.id: a for a in apartments}
+    ordered = [apt_map[i] for i in ids if i in apt_map]
+
+    result = [_build_compare_item(a) for a in ordered]
+    return unified_response(data=result)
 
 
 # ============================================================
@@ -648,16 +842,66 @@ def merchant_apartment_list(request):
     商家已上架房源列表
     （由 merchant_urls.py 中的外层视图统一添加 @api_view 和 @permission_classes）
     """
+    from datetime import timedelta
+    from django.db.models import Count, Q
+
     landlord = request.user
+    thirty_days_ago = timezone.localdate() - timedelta(days=30)
     queryset = Apartment.objects.filter(
         landlord=landlord,
         status='published',
+    ).annotate(
+        favorites_count=Count('favorited_by', distinct=True),
+        views_30d=Count(
+            'view_logs',
+            filter=Q(view_logs__view_date__gte=thirty_days_ago),
+            distinct=True,
+        ),
     ).order_by('-updated_at')
 
     paginator = StandardPagination()
     page = paginator.paginate_queryset(queryset, request)
     serializer = MerchantApartmentListSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: MerchantStatsSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
+    summary='商家数据统计',
+    description='返回当前商家所有房源近 30 天浏览量（按用户+天去重）与当前有效收藏总数。',
+    tags=['商家房源'],
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsLandlord])
+def merchant_stats(request):
+    """
+    GET /api/v1/merchant/stats
+    商家数据统计
+    """
+    from datetime import timedelta
+    from apps.favorites.models import Favorite
+
+    landlord = request.user
+    thirty_days_ago = timezone.localdate() - timedelta(days=30)
+
+    total_favorites = Favorite.objects.filter(
+        apartment__landlord=landlord,
+    ).count()
+
+    total_views_30d = ApartmentViewLog.objects.filter(
+        apartment__landlord=landlord,
+        view_date__gte=thirty_days_ago,
+    ).count()
+
+    return unified_response(data={
+        'total_views_30d': total_views_30d,
+        'total_favorites': total_favorites,
+    })
 
 
 def merchant_apartment_detail(request, id):

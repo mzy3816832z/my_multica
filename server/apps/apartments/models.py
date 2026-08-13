@@ -235,3 +235,46 @@ class RentalPlan(BaseModel):
 
     def __str__(self):
         return f'{self.room_type.name} - {self.lease_term}({self.monthly_rent}元)'
+
+
+class ApartmentViewLog(BaseModel):
+    """
+    房源浏览日志
+
+    详情页 PV 去重统计：按 (房源, 去重键, 日期) 唯一。
+    去重键 = 登录用户 ID 或匿名访客 IP，实现"按用户+天"去重。
+    """
+    apartment = models.ForeignKey(
+        Apartment,
+        on_delete=models.CASCADE,
+        related_name='view_logs',
+        verbose_name='房源',
+    )
+    dedupe_key = models.CharField(
+        max_length=64,
+        verbose_name='去重键（用户 ID 或匿名 IP）',
+    )
+    view_date = models.DateField(
+        verbose_name='浏览日期',
+    )
+
+    objects = models.Manager()
+    all_objects = AllObjectsManager()
+
+    class Meta:
+        db_table = 'apartment_view_logs'
+        verbose_name = '房源浏览日志'
+        verbose_name_plural = '房源浏览日志'
+        indexes = [
+            models.Index(fields=['apartment', 'view_date']),
+            models.Index(fields=['view_date']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['apartment', 'dedupe_key', 'view_date'],
+                name='unique_apartment_viewer_date',
+            ),
+        ]
+
+    def __str__(self):
+        return f'View({self.apartment_id} - {self.dedupe_key} - {self.view_date})'

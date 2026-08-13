@@ -51,6 +51,12 @@ const router = createRouter({
       meta: { public: true, title: '户型详情', hideTabBar: true },
     },
     {
+      path: '/compare',
+      name: 'Compare',
+      component: () => import('@/views/apartment/CompareView.vue'),
+      meta: { public: true, title: '房源对比', hideTabBar: true },
+    },
+    {
       path: '/profile',
       name: 'Profile',
       component: () => import('@/views/profile/ProfileView.vue'),
@@ -61,6 +67,12 @@ const router = createRouter({
       name: 'Favorites',
       component: () => import('@/views/profile/FavoritesView.vue'),
       meta: { public: false, roles: ['tenant'], title: '我的收藏', hideTabBar: true },
+    },
+    {
+      path: '/profile/history',
+      name: 'BrowseHistory',
+      component: () => import('@/views/profile/BrowseHistoryView.vue'),
+      meta: { public: true, title: '浏览历史', hideTabBar: true },
     },
     {
       path: '/profile/messages',

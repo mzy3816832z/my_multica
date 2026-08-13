@@ -338,3 +338,119 @@ class RejectNotificationTests(TestCase):
         log = SmsLog.objects.filter(phone='13800138000', template_code='REJECT_NOTIFY').first()
         self.assertIsNotNone(log)
         self.assertEqual(log.status, 'mock')
+
+
+class ApproveNotificationTests(TestCase):
+    """审核通过触发站内信测试"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+        self.landlord = User.objects.create(phone='13800138000', password="fake", role='landlord', is_active=True)
+        self.admin = User.objects.create(username='admin123', password="fake", role='admin', is_active=True)
+        self.admin_token = self._get_token(self.admin)
+
+        self.apartment = Apartment.objects.create(
+            landlord=self.landlord, name='测试公寓', cover_image='https://example.com/cover.jpg',
+            description='描述', district=self.district, street=self.street,
+            detail_address='测试路1号', contact_phone='13800138000', status='pending_first_review',
+        )
+        self.first_audit = AuditRecord.objects.create(
+            apartment=self.apartment, type='first_review', status='pending', submitted_data={},
+        )
+
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['phone'] = user.phone
+        refresh['username'] = user.username
+        return str(refresh.access_token)
+
+    def test_approve_first_review_creates_message(self):
+        """首次审核通过创建 audit_approved 站内信"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
+        response = self.client.post(f'/api/v1/admin/audits/{self.first_audit.id}/approve/')
+        self.assertEqual(response.status_code, 200)
+
+        msg = Message.objects.filter(user=self.landlord, related_apartment=self.apartment).first()
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.type, 'audit_approved')
+        self.assertEqual(msg.is_read, False)
+        self.assertEqual(msg.related_audit_id, self.first_audit.id)
+        self.assertIn('通过', msg.title)
+
+    def test_approve_change_review_creates_message(self):
+        """变更审核通过创建 audit_approved 站内信"""
+        self.apartment.status = 'published'
+        self.apartment.save()
+        change_audit = AuditRecord.objects.create(
+            apartment=self.apartment, type='change_review', status='pending',
+            submitted_data={'name': '新名称'}, original_data={'name': '测试公寓'},
+            changed_fields=['name'],
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
+        response = self.client.post(f'/api/v1/admin/audits/{change_audit.id}/approve/')
+        self.assertEqual(response.status_code, 200)
+
+        msg = Message.objects.filter(user=self.landlord, related_audit=change_audit).first()
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.type, 'audit_approved')
+
+
+class SystemMessageTests(TestCase):
+    """系统通知（type=system）与消息列表展示测试"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+        self.landlord = User.objects.create(phone='13800138000', password="fake", role='landlord', is_active=True)
+        self.token = self._get_token(self.landlord)
+        self.apartment = Apartment.objects.create(
+            landlord=self.landlord, name='测试公寓', cover_image='https://example.com/cover.jpg',
+            description='描述', district=self.district, street=self.street,
+            detail_address='测试路1号', contact_phone='13800138000', status='published',
+        )
+
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['phone'] = user.phone
+        refresh['username'] = user.username
+        return str(refresh.access_token)
+
+    def test_system_message_no_apartment(self):
+        """系统通知无关联房源，列表返回 related_apartment_id 为 null"""
+        Message.objects.create(
+            user=self.landlord, type='system', title='系统维护通知',
+            content='今晚维护', related_apartment=None,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
+        response = self.client.get('/api/v1/messages/')
+        self.assertEqual(response.status_code, 200)
+        item = response.json()['data']['items'][0]
+        self.assertEqual(item['type'], 'system')
+        self.assertIsNone(item['related_apartment_id'])
+        self.assertIsNone(item['related_apartment_name'])
+
+    def test_send_system_notification_command(self):
+        """命令行发送系统通知"""
+        from io import StringIO
+        from django.core.management import call_command
+
+        tenant = User.objects.create(phone='13900139000', password="fake", role='tenant', is_active=True)
+        out = StringIO()
+        call_command(
+            'send_system_notification',
+            title='系统公告', content='欢迎使用',
+            stdout=out,
+        )
+        self.assertIn('2 名用户', out.getvalue())
+
+        for user in [self.landlord, tenant]:
+            msg = Message.objects.filter(user=user, type='system').first()
+            self.assertIsNotNone(msg)
+            self.assertEqual(msg.title, '系统公告')
+            self.assertIsNone(msg.related_apartment_id)

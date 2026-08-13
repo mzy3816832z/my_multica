@@ -66,6 +66,11 @@ export interface District {
 }
 
 // 房源列表项 / 详情
+export interface LandlordInfo {
+  verified_phone: boolean
+  active_listing_count: number
+}
+
 export interface Apartment {
   id: number
   name: string
@@ -90,10 +95,13 @@ export interface Apartment {
   other_fees?: string
   min_area?: number | null
   verified?: boolean
+  landlord_info?: LandlordInfo
   created_at?: number
   updated_at?: number
   is_favorite?: boolean
   room_types?: RoomType[]
+  views_30d?: number
+  favorites_count?: number
 }
 
 // 房型
@@ -109,6 +117,10 @@ export interface RoomType {
   window_type_label?: string
   floor: number
   sort: number
+  area?: number | null
+  orientation?: string | null
+  orientation_label?: string | null
+  available_date?: string | null
   rental_plans?: RentalPlan[]
   min_monthly_rent?: number
 }
@@ -126,11 +138,11 @@ export interface RentalPlan {
 
 export interface Message {
   id: number
-  type: 'first_rejected' | 'change_rejected'
+  type: 'first_rejected' | 'change_rejected' | 'audit_approved' | 'system'
   type_display?: string
   title: string
   content: string
-  related_apartment_id: number
+  related_apartment_id: number | null
   related_apartment_name?: string | null
   related_audit_id?: number
   is_read: boolean
@@ -173,6 +185,23 @@ export interface MerchantApartmentDetail extends Apartment {
   room_types: RoomType[]
 }
 
+// 商家数据统计
+export interface MerchantStats {
+  total_views_30d: number
+  total_favorites: number
+}
+
+// 浏览历史条目
+export interface BrowseHistoryItem {
+  apartment_id: number
+  name: string
+  cover_image: string
+  district_name: string
+  street_name: string
+  min_monthly_rent: number | null
+  timestamp: number
+}
+
 // 热门区域
 export interface HotDistrict {
   district_id: number
@@ -203,4 +232,41 @@ export interface GeocodeResult {
 // 地图配置
 export interface MapConfig {
   amap_js_key: string
+}
+
+// 房源对比费用明细
+export interface ApartmentCompareFees {
+  property_fee: number | null
+  water_fee_label: string | null
+  electric_fee_label: string | null
+  service_fee: number | null
+  other_fees: string
+}
+
+// 房源对比数据项
+export interface ApartmentCompareItem {
+  id: number
+  name: string
+  cover_image: string
+  min_monthly_rent: number | null
+  min_area: number | null
+  orientations: string[]
+  fees: ApartmentCompareFees
+  facilities: string[]
+}
+
+// 地铁站点
+export interface MetroStation {
+  id: number
+  name: string
+  longitude: number
+  latitude: number
+}
+
+// 地铁线路
+export interface MetroLine {
+  id: number
+  name: string
+  code: string
+  stations: MetroStation[]
 }
