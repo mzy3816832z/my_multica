@@ -189,6 +189,17 @@ export interface MerchantStats {
   total_favorites: number
 }
 
+// 浏览历史条目
+export interface BrowseHistoryItem {
+  apartment_id: number
+  name: string
+  cover_image: string
+  district_name: string
+  street_name: string
+  min_monthly_rent: number | null
+  timestamp: number
+}
+
 // 热门区域
 export interface HotDistrict {
   district_id: number
