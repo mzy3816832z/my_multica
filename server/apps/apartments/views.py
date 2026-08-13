@@ -23,6 +23,7 @@ from apps.apartments.serializers import (
     MerchantApartmentListSerializer,
     MerchantStatsSerializer,
     RoomTypeDetailSerializer,
+    get_dict_label,
 )
 from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
 from apps.audits.models import AuditRecord
@@ -432,6 +433,108 @@ def room_type_detail(request, id):
     room_type.rental_plans.all()  # prefetch 已在序列化器中通过 context 控制，这里直接查
     serializer = RoomTypeDetailSerializer(room_type)
     return unified_response(data=serializer.data)
+
+
+def _build_compare_item(apartment):
+    """
+    构建单套公寓的简化对比数据，包含价格/面积/朝向/费用明细/设施列表。
+    设施与朝向标签从系统字典解析（缺失时回退到原始编码）。
+    """
+    orientations = []
+    facility_codes = set()
+    seen_orientations = set()
+    for rt in apartment.room_types.all().order_by('sort', 'id'):
+        if rt.orientation and rt.orientation not in seen_orientations:
+            seen_orientations.add(rt.orientation)
+            orientations.append(get_dict_label('window_orientation', rt.orientation))
+        for code in (rt.facilities or []):
+            facility_codes.add(code)
+
+    facilities = sorted(
+        get_dict_label('facility', code) for code in facility_codes
+    )
+
+    return {
+        'id': apartment.id,
+        'name': apartment.name,
+        'cover_image': apartment.cover_image,
+        'min_monthly_rent': apartment.min_monthly_rent,
+        'min_area': float(apartment.min_area) if apartment.min_area is not None else None,
+        'orientations': orientations,
+        'fees': {
+            'property_fee': apartment.property_fee,
+            'water_fee_label': get_dict_label('fee_type', apartment.water_fee),
+            'electric_fee_label': get_dict_label('fee_type', apartment.electric_fee),
+            'service_fee': apartment.service_fee,
+            'other_fees': apartment.other_fees or '',
+        },
+        'facilities': facilities,
+    }
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'code': {'type': 'integer'},
+                'message': {'type': 'string'},
+                'data': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'integer'},
+                            'name': {'type': 'string'},
+                            'cover_image': {'type': 'string'},
+                            'min_monthly_rent': {'type': 'integer', 'nullable': True},
+                            'min_area': {'type': 'number', 'nullable': True},
+                            'orientations': {'type': 'array', 'items': {'type': 'string'}},
+                            'fees': {'type': 'object'},
+                            'facilities': {'type': 'array', 'items': {'type': 'string'}},
+                        },
+                    },
+                },
+            },
+        },
+    },
+    summary='房源对比',
+    description='接收逗号分隔的房源 ID（2-3 个），返回并排展示所需的简化对比数据。',
+    tags=['公共房源'],
+    parameters=[
+        {'name': 'ids', 'in': 'query', 'schema': {'type': 'string'}, 'description': '房源 ID，逗号分隔（2-3 个）'},
+    ],
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def apartment_compare(request):
+    """
+    GET /api/v1/apartments/compare
+    房源对比：返回简化对比数据
+    """
+    ids_param = request.query_params.get('ids', '')
+    if not ids_param.strip():
+        raise BusinessException('请选择要对比的房源', code=ErrorCode.PARAM_ERROR)
+
+    try:
+        ids = [int(x) for x in ids_param.split(',') if x.strip()]
+    except ValueError:
+        raise BusinessException('参数 ids 格式不正确', code=ErrorCode.PARAM_ERROR)
+
+    if not ids:
+        raise BusinessException('请选择要对比的房源', code=ErrorCode.PARAM_ERROR)
+    if len(ids) < 2:
+        raise BusinessException('至少选择2套房源进行对比', code=ErrorCode.PARAM_ERROR)
+    if len(ids) > 3:
+        raise BusinessException('最多对比3套', code=ErrorCode.PARAM_ERROR)
+
+    apartments = Apartment.objects.filter(id__in=ids, status='published')
+    apt_map = {a.id: a for a in apartments}
+    ordered = [apt_map[i] for i in ids if i in apt_map]
+
+    result = [_build_compare_item(a) for a in ordered]
+    return unified_response(data=result)
 
 
 # ============================================================

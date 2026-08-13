@@ -352,6 +352,77 @@ async function toggleFavorite(apartment: Apartment, event: Event) {
   }
 }
 
+// ================= 对比选择模式 =================
+const selectMode = ref(false)
+const selectedIds = ref<number[]>([])
+const MAX_COMPARE = 3
+
+let longPressTimer: number | null = null
+let suppressClick = false
+
+function clearLongPress() {
+  if (longPressTimer !== null) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function onCardPress(id: number) {
+  if (selectMode.value) return
+  clearLongPress()
+  longPressTimer = window.setTimeout(() => {
+    suppressClick = true
+    selectMode.value = true
+    toggleSelect(id)
+  }, 500)
+}
+
+function onCardRelease() {
+  clearLongPress()
+}
+
+function onCardClick(id: number) {
+  if (suppressClick) {
+    suppressClick = false
+    return
+  }
+  if (selectMode.value) {
+    toggleSelect(id)
+  } else {
+    goDetail(id)
+  }
+}
+
+function toggleSelect(id: number) {
+  const idx = selectedIds.value.indexOf(id)
+  if (idx > -1) {
+    selectedIds.value.splice(idx, 1)
+  } else {
+    if (selectedIds.value.length >= MAX_COMPARE) {
+      showToast('最多对比3套')
+      return
+    }
+    selectedIds.value.push(id)
+  }
+}
+
+function isSelected(id: number) {
+  return selectedIds.value.includes(id)
+}
+
+function exitSelectMode() {
+  selectMode.value = false
+  selectedIds.value = []
+  clearLongPress()
+}
+
+function startCompare() {
+  if (selectedIds.value.length < 2) return
+  const ids = selectedIds.value.join(',')
+  exitSelectMode()
+  router.push({ path: '/compare', query: { ids } })
+}
+
 // ================= 初始化 =================
 onMounted(() => {
   loadDistricts()
@@ -362,7 +433,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="apartment-list">
+  <div class="apartment-list" :class="{ 'has-compare-bar': selectMode }">
     <!-- 顶部搜索栏 -->
     <div class="sticky top-0 z-10 bg-white shadow-sm">
       <div class="flex items-center px-3 py-2 gap-2">
@@ -431,9 +502,25 @@ onMounted(() => {
           <div
             v-for="item in list"
             :key="item.id"
-            class="apartment-card bg-white rounded-xl overflow-hidden shadow-sm"
-            @click="goDetail(item.id)"
+            class="apartment-card bg-white rounded-xl overflow-hidden shadow-sm relative"
+            :class="{ 'card-selected': selectMode && isSelected(item.id) }"
+            @click="onCardClick(item.id)"
+            @touchstart="onCardPress(item.id)"
+            @touchend="onCardRelease"
+            @touchmove="onCardRelease"
+            @mousedown="onCardPress(item.id)"
+            @mouseup="onCardRelease"
+            @mouseleave="onCardRelease"
+            @contextmenu.prevent
           >
+            <!-- 选择模式勾选标识 -->
+            <div
+              v-if="selectMode"
+              class="select-indicator"
+              :class="{ active: isSelected(item.id) }"
+            >
+              <van-icon :name="isSelected(item.id) ? 'success' : 'circle'" />
+            </div>
             <!-- 图片 -->
             <div class="card-image bg-gray-100">
               <van-image
@@ -459,7 +546,7 @@ onMounted(() => {
                 <span v-if="item.min_monthly_rent != null" class="text-primary font-bold">¥{{ item.min_monthly_rent }}/月起</span>
                 <span v-else class="text-sm text-gray-400">暂无报价</span>
                 <van-icon
-                  v-if="authStore.isTenant"
+                  v-if="authStore.isTenant && !selectMode"
                   :name="item.is_favorite ? 'star' : 'star-o'"
                   :class="item.is_favorite ? 'text-warning' : 'text-gray-400'"
                   class="text-xl"
@@ -480,6 +567,20 @@ onMounted(() => {
     >
       <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg">
         <van-icon name="plus" class="text-white text-xl" />
+      </div>
+    </div>
+
+    <!-- 对比选择底部栏 -->
+    <div v-if="selectMode" class="compare-bar safe-area-bottom">
+      <span class="compare-count">已选 {{ selectedIds.length }}/{{ MAX_COMPARE }} 套</span>
+      <div class="flex gap-2">
+        <van-button size="small" plain @click="exitSelectMode">取消</van-button>
+        <van-button
+          size="small"
+          type="primary"
+          :disabled="selectedIds.length < 2"
+          @click="startCompare"
+        >开始对比</van-button>
       </div>
     </div>
 
@@ -790,5 +891,52 @@ onMounted(() => {
   bottom: 80px;
   z-index: 999;
   cursor: pointer;
+}
+
+.compare-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+  background-color: #fff;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compare-count {
+  font-size: 14px;
+  color: #323233;
+}
+
+.has-compare-bar {
+  padding-bottom: 64px;
+}
+
+.select-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select-indicator.active {
+  background-color: $primary;
+}
+
+.card-selected {
+  box-shadow: 0 0 0 2px $primary;
 }
 </style>

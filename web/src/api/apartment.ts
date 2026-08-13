@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PaginatedData, Apartment, RoomType, HotDistrict, MetroLine } from '@/types'
+import type { PaginatedData, Apartment, RoomType, HotDistrict, MetroLine, ApartmentCompareItem } from '@/types'
 
 export interface ApartmentListParams {
   keyword?: string
@@ -33,6 +33,10 @@ export function getRoomTypeDetail(id: number): Promise<RoomType> {
 
 export function getHotDistricts(): Promise<HotDistrict[]> {
   return request.get('/apartments/hot-districts/')
+}
+
+export function getApartmentCompare(ids: number[]): Promise<ApartmentCompareItem[]> {
+  return request.get('/apartments/compare/', { params: { ids: ids.join(',') } })
 }
 
 export function getMetroLines(): Promise<MetroLine[]> {
