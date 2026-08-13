@@ -2,14 +2,17 @@
 import { formatDateTime } from '@/utils/datetime'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getMerchantApartments, getMerchantAudits, deleteApartment } from '@/api/merchant'
+import { getMerchantApartments, getMerchantAudits, getMerchantStats, deleteApartment } from '@/api/merchant'
 import { useUiStore } from '@/stores/ui'
-import type { Apartment, MerchantAuditItem } from '@/types'
+import type { Apartment, MerchantAuditItem, MerchantStats } from '@/types'
 
 const router = useRouter()
 const uiStore = useUiStore()
 
 const activeTab = ref(0)
+
+// 商家数据统计
+const stats = ref<MerchantStats | null>(null)
 
 // 已上架房源
 const publishedList = ref<Apartment[]>([])
@@ -25,6 +28,15 @@ const auditLoading = ref(false)
 const auditFinished = ref(false)
 const auditRefreshing = ref(false)
 const auditPage = ref(1)
+
+// 加载商家数据统计
+async function loadStats() {
+  try {
+    stats.value = await getMerchantStats()
+  } catch {
+    // 错误已在 request 拦截器中 toast
+  }
+}
 
 // 加载已上架房源
 async function loadPublishedList(isRefresh = false) {
@@ -177,12 +189,25 @@ function auditStatusType(status?: string): 'primary' | 'success' | 'warning' | '
 onMounted(() => {
   loadPublishedList(true)
   loadAuditList(true)
+  loadStats()
 })
 </script>
 
 <template>
   <div class="my-apartments-page">
     <van-nav-bar title="已上架房源" left-arrow @click-left="$router.back()" fixed placeholder />
+
+    <div v-if="stats" class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-num">{{ stats.total_views_30d }}</span>
+        <span class="stat-label">近30天浏览</span>
+      </div>
+      <div class="stat-divider" />
+      <div class="stat-item">
+        <span class="stat-num">{{ stats.total_favorites }}</span>
+        <span class="stat-label">总收藏</span>
+      </div>
+    </div>
 
     <van-tabs v-model:active="activeTab" sticky offset-top="46" class="apartment-tabs">
       <van-tab title="已上架">
@@ -223,6 +248,16 @@ onMounted(() => {
                       </van-tag>
                       <span class="text-sm font-bold text-danger">
                         {{ item.min_monthly_rent ? item.min_monthly_rent + ' 元/月起' : '-' }}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+                      <span class="flex items-center gap-0.5">
+                        <van-icon name="eye-o" />
+                        {{ item.views_30d ?? 0 }} 次浏览
+                      </span>
+                      <span class="flex items-center gap-0.5">
+                        <van-icon name="star-o" />
+                        {{ item.favorites_count ?? 0 }} 收藏
                       </span>
                     </div>
                   </div>
@@ -307,6 +342,42 @@ onMounted(() => {
 .my-apartments-page {
   min-height: 100vh;
   background-color: $bg-color;
+}
+
+.stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background-color: #fff;
+  padding: 14px 0;
+  margin: 8px 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  .stat-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stat-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: $primary;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #e5e7eb;
+  }
 }
 
 .apartment-card-list {

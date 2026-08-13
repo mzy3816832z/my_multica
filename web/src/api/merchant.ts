@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { Apartment, MerchantAuditItem, MerchantApartmentDetail, PaginatedData } from '@/types'
+import type { Apartment, MerchantAuditItem, MerchantApartmentDetail, MerchantStats, PaginatedData } from '@/types'
 
 export interface CreateApartmentPayload {
   name: string
@@ -96,4 +96,8 @@ export function deleteApartment(id: number): Promise<void> {
 
 export function getMerchantAudits(params?: { page?: number; page_size?: number }): Promise<PaginatedData<MerchantAuditItem>> {
   return request.get('/merchant/audits/', { params })
+}
+
+export function getMerchantStats(): Promise<MerchantStats> {
+  return request.get('/merchant/stats/')
 }

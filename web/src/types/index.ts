@@ -98,6 +98,8 @@ export interface Apartment {
   updated_at?: number
   is_favorite?: boolean
   room_types?: RoomType[]
+  views_30d?: number
+  favorites_count?: number
 }
 
 // 房型
@@ -134,11 +136,11 @@ export interface RentalPlan {
 
 export interface Message {
   id: number
-  type: 'first_rejected' | 'change_rejected'
+  type: 'first_rejected' | 'change_rejected' | 'audit_approved' | 'system'
   type_display?: string
   title: string
   content: string
-  related_apartment_id: number
+  related_apartment_id: number | null
   related_apartment_name?: string | null
   related_audit_id?: number
   is_read: boolean
@@ -179,6 +181,12 @@ export interface MerchantAuditItem {
 // 商家房源详情（含房型）
 export interface MerchantApartmentDetail extends Apartment {
   room_types: RoomType[]
+}
+
+// 商家数据统计
+export interface MerchantStats {
+  total_views_30d: number
+  total_favorites: number
 }
 
 // 热门区域

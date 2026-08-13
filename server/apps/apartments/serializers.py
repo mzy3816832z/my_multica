@@ -366,6 +366,8 @@ class MerchantApartmentListSerializer(serializers.Serializer):
     min_monthly_rent = serializers.IntegerField(help_text='最低月租金（元）', allow_null=True)
     min_area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='最小面积（㎡）', allow_null=True)
     status = serializers.CharField(max_length=30, help_text='房源状态')
+    views_30d = serializers.IntegerField(help_text='近 30 天浏览量（去重）')
+    favorites_count = serializers.IntegerField(help_text='收藏数')
     created_at = TimestampField(help_text='创建时间')
     updated_at = TimestampField(help_text='更新时间')
 
@@ -374,6 +376,12 @@ class MerchantApartmentListSerializer(serializers.Serializer):
 
     def get_street_name(self, obj):
         return obj.street.name if obj.street else None
+
+
+class MerchantStatsSerializer(serializers.Serializer):
+    """商家数据统计序列化器"""
+    total_views_30d = serializers.IntegerField(help_text='近 30 天浏览量（去重）')
+    total_favorites = serializers.IntegerField(help_text='当前有效收藏总数')
 
 
 class MerchantApartmentDetailSerializer(serializers.Serializer):

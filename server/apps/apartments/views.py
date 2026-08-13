@@ -11,9 +11,9 @@ from django.db.models import F, Q, Case, When, Value, IntegerField
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from apps.apartments.models import Apartment, RentalPlan, RoomType
+from apps.apartments.models import Apartment, RentalPlan, RoomType, ApartmentViewLog
 from apps.apartments.serializers import (
     ApartmentCreateSerializer,
     ApartmentDetailSerializer,
@@ -21,6 +21,7 @@ from apps.apartments.serializers import (
     ApartmentUpdateSerializer,
     MerchantApartmentDetailSerializer,
     MerchantApartmentListSerializer,
+    MerchantStatsSerializer,
     RoomTypeDetailSerializer,
 )
 from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
@@ -28,6 +29,7 @@ from apps.audits.models import AuditRecord
 from apps.metro.models import MetroStation
 from core.exceptions import BusinessException, NotFoundException, GoneException
 from core.pagination import StandardPagination
+from core.permissions import IsLandlord
 from core.response import ErrorCode, unified_response, UnifiedErrorResponseSerializer
 
 logger = logging.getLogger('apps')
@@ -50,6 +52,42 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
     c = 2 * asin(sqrt(a))
     return 6371 * c
+
+
+def _get_client_ip(request):
+    """
+    获取客户端 IP（优先取 X-Forwarded-For 第一个 IP，用于匿名 PV 去重）
+    """
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        return x_forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', 'unknown')
+
+
+def _record_apartment_view(apartment, request):
+    """
+    记录房源详情页 PV，按 (用户/匿名 IP + 天) 去重。
+    商家查看自己的房源不计入浏览量；记录失败不影响详情响应。
+    """
+    try:
+        user = request.user if request.user.is_authenticated else None
+        # 商家查看自己的房源不计入浏览量
+        if user and apartment.landlord_id == user.id:
+            return
+
+        if user:
+            dedupe_key = f'u:{user.id}'
+        else:
+            dedupe_key = f'a:{_get_client_ip(request)}'
+
+        today = timezone.localdate()
+        ApartmentViewLog.objects.get_or_create(
+            apartment=apartment,
+            dedupe_key=dedupe_key,
+            view_date=today,
+        )
+    except Exception:
+        logger.exception('[ApartmentView] record failed for apartment=%s', apartment.id)
 
 
 SORT_OPTIONS = {
@@ -323,6 +361,8 @@ def apartment_detail(request, id):
     if apartment.min_area is None:
         backfill_apartment_min_area(apartment)
 
+    _record_apartment_view(apartment, request)
+
     serializer = ApartmentDetailSerializer(apartment, context={'request': request})
     return unified_response(data=serializer.data)
 
@@ -588,16 +628,66 @@ def merchant_apartment_list(request):
     商家已上架房源列表
     （由 merchant_urls.py 中的外层视图统一添加 @api_view 和 @permission_classes）
     """
+    from datetime import timedelta
+    from django.db.models import Count, Q
+
     landlord = request.user
+    thirty_days_ago = timezone.localdate() - timedelta(days=30)
     queryset = Apartment.objects.filter(
         landlord=landlord,
         status='published',
+    ).annotate(
+        favorites_count=Count('favorited_by', distinct=True),
+        views_30d=Count(
+            'view_logs',
+            filter=Q(view_logs__view_date__gte=thirty_days_ago),
+            distinct=True,
+        ),
     ).order_by('-updated_at')
 
     paginator = StandardPagination()
     page = paginator.paginate_queryset(queryset, request)
     serializer = MerchantApartmentListSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: MerchantStatsSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+    },
+    summary='商家数据统计',
+    description='返回当前商家所有房源近 30 天浏览量（按用户+天去重）与当前有效收藏总数。',
+    tags=['商家房源'],
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsLandlord])
+def merchant_stats(request):
+    """
+    GET /api/v1/merchant/stats
+    商家数据统计
+    """
+    from datetime import timedelta
+    from apps.favorites.models import Favorite
+
+    landlord = request.user
+    thirty_days_ago = timezone.localdate() - timedelta(days=30)
+
+    total_favorites = Favorite.objects.filter(
+        apartment__landlord=landlord,
+    ).count()
+
+    total_views_30d = ApartmentViewLog.objects.filter(
+        apartment__landlord=landlord,
+        view_date__gte=thirty_days_ago,
+    ).count()
+
+    return unified_response(data={
+        'total_views_30d': total_views_30d,
+        'total_favorites': total_favorites,
+    })
 
 
 def merchant_apartment_detail(request, id):

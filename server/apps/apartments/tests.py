@@ -2,11 +2,13 @@
 公共房源列表与详情接口单元测试
 商家已上架房源管理接口单元测试
 """
+from datetime import timedelta
+
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.apartments.models import Apartment, RentalPlan, RoomType
+from apps.apartments.models import Apartment, RentalPlan, RoomType, ApartmentViewLog
 from apps.audits.models import AuditRecord
 from apps.districts.models import District
 from apps.favorites.models import Favorite
@@ -1418,3 +1420,132 @@ class EnumValidationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['code'], 400001)
         self.assertIn('无效的租期', response.json()['message'])
+
+
+class ApartmentViewLogTests(TestCase):
+    """房源详情页 PV 去重记录测试"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+        self.landlord = User.objects.create(phone='13800138000', password="fake", role='landlord', is_active=True)
+        self.tenant = User.objects.create(phone='13900139000', password="fake", role='tenant', is_active=True)
+        self.tenant_token = self._get_token(self.tenant)
+
+        self.apartment = Apartment.objects.create(
+            landlord=self.landlord, name='测试公寓', cover_image='https://example.com/cover.jpg',
+            description='描述', district=self.district, street=self.street,
+            detail_address='测试路1号', contact_phone='13800138000', status='published',
+        )
+
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['phone'] = user.phone
+        refresh['username'] = user.username
+        return str(refresh.access_token)
+
+    def test_detail_creates_view_log(self):
+        """详情页访问创建浏览日志"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tenant_token}')
+        self.client.get(f'/api/v1/apartments/{self.apartment.id}/')
+        self.assertEqual(ApartmentViewLog.objects.filter(apartment=self.apartment).count(), 1)
+
+    def test_same_user_same_day_dedup(self):
+        """同一用户同一天多次访问只计一次"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tenant_token}')
+        self.client.get(f'/api/v1/apartments/{self.apartment.id}/')
+        self.client.get(f'/api/v1/apartments/{self.apartment.id}/')
+        self.assertEqual(ApartmentViewLog.objects.filter(apartment=self.apartment).count(), 1)
+
+    def test_landlord_self_view_not_counted(self):
+        """商家查看自己的房源不计入浏览量"""
+        landlord_token = self._get_token(self.landlord)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {landlord_token}')
+        self.client.get(f'/api/v1/apartments/{self.apartment.id}/')
+        self.assertEqual(ApartmentViewLog.objects.filter(apartment=self.apartment).count(), 0)
+
+    def test_anonymous_view_counted(self):
+        """匿名访问计入浏览量"""
+        self.client.get(f'/api/v1/apartments/{self.apartment.id}/')
+        self.assertEqual(ApartmentViewLog.objects.filter(apartment=self.apartment).count(), 1)
+
+
+class MerchantStatsTests(TestCase):
+    """商家数据统计接口测试"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+        self.landlord = User.objects.create(phone='13800138000', password="fake", role='landlord', is_active=True)
+        self.landlord_token = self._get_token(self.landlord)
+        self.tenant = User.objects.create(phone='13900139000', password="fake", role='tenant', is_active=True)
+
+        self.apartment = Apartment.objects.create(
+            landlord=self.landlord, name='测试公寓', cover_image='https://example.com/cover.jpg',
+            description='描述', district=self.district, street=self.street,
+            detail_address='测试路1号', contact_phone='13800138000', status='published',
+        )
+
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['phone'] = user.phone
+        refresh['username'] = user.username
+        return str(refresh.access_token)
+
+    def test_stats_success(self):
+        """统计接口返回浏览量（去重）与收藏数"""
+        from django.utils import timezone
+
+        # 两条今日浏览日志（不同用户，各计一次）
+        ApartmentViewLog.objects.create(apartment=self.apartment, dedupe_key='u:1', view_date=timezone.localdate())
+        ApartmentViewLog.objects.create(apartment=self.apartment, dedupe_key='u:2', view_date=timezone.localdate())
+        # 一条 60 天前浏览日志，不计入近 30 天
+        ApartmentViewLog.objects.create(
+            apartment=self.apartment, dedupe_key='u:3',
+            view_date=timezone.localdate() - timedelta(days=60),
+        )
+        # 两条收藏
+        Favorite.objects.create(user=self.tenant, apartment=self.apartment)
+        other_tenant = User.objects.create(phone='13900139001', password="fake", role='tenant', is_active=True)
+        Favorite.objects.create(user=other_tenant, apartment=self.apartment)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.get('/api/v1/merchant/stats/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['total_views_30d'], 2)
+        self.assertEqual(data['total_favorites'], 2)
+
+    def test_stats_empty(self):
+        """无数据时统计返回 0"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.get('/api/v1/merchant/stats/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['total_views_30d'], 0)
+        self.assertEqual(data['total_favorites'], 0)
+
+    def test_stats_not_landlord(self):
+        """非商家返回 403"""
+        tenant_token = self._get_token(self.tenant)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tenant_token}')
+        response = self.client.get('/api/v1/merchant/stats/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_list_contains_stats_fields(self):
+        """商家房源列表返回 views_30d 与 favorites_count"""
+        from django.utils import timezone
+
+        ApartmentViewLog.objects.create(apartment=self.apartment, dedupe_key='u:1', view_date=timezone.localdate())
+        Favorite.objects.create(user=self.tenant, apartment=self.apartment)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.get('/api/v1/merchant/apartments/')
+        self.assertEqual(response.status_code, 200)
+        item = response.json()['data']['items'][0]
+        self.assertEqual(item['views_30d'], 1)
+        self.assertEqual(item['favorites_count'], 1)

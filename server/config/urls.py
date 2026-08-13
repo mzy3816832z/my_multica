@@ -11,6 +11,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from core.views import health_check
+from apps.apartments import views as apartment_views
 
 
 urlpatterns = [
@@ -22,6 +23,7 @@ urlpatterns = [
     path('api/v1/favorites/', include('apps.favorites.urls')),
     path('api/v1/merchant/apartments/', include('apps.apartments.merchant_urls')),
     path('api/v1/merchant/audits/', include('apps.audits.merchant_urls')),
+    path('api/v1/merchant/stats/', apartment_views.merchant_stats, name='merchant-stats'),
     path('api/v1/messages/', include('apps.messages_app.urls')),
     path('api/v1/admin/', include('apps.audits.urls')),
     path('api/v1/districts/', include('apps.districts.urls')),

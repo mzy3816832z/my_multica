@@ -230,6 +230,9 @@ def audit_approve(request, id):
         audit.reviewer = reviewer
         audit.save(update_fields=['status', 'reviewer'])
 
+        # 发送审核通过站内信（核心通知，与审核状态强绑定，保留在事务内）
+        _send_approve_message(audit)
+
     logger.info(f'[AuditApprove] reviewer={reviewer.id}, audit={audit.id}, type={audit.type}')
 
     return unified_response(
@@ -459,6 +462,32 @@ def _send_reject_message(audit, reject_reason):
     Message.objects.create(
         user=landlord,
         type=msg_type,
+        title=title,
+        content=content,
+        related_apartment=apartment,
+        related_audit=audit,
+    )
+
+
+def _send_approve_message(audit):
+    """
+    发送审核通过站内信
+    """
+    apartment = audit.apartment
+    landlord = apartment.landlord if apartment else None
+    if not landlord:
+        return
+
+    if audit.type == 'first_review':
+        title = '房源审核通过'
+        content = f'您的房源「{apartment.name}」已通过审核，正式上架。'
+    else:
+        title = '房源变更审核通过'
+        content = f'您的房源「{apartment.name}」的变更已通过审核，已生效。'
+
+    Message.objects.create(
+        user=landlord,
+        type='audit_approved',
         title=title,
         content=content,
         related_apartment=apartment,
