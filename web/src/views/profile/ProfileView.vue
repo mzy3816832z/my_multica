@@ -30,6 +30,7 @@ const commonMenus = [
 // 租客专属菜单
 const tenantMenus = [
   { title: '我的收藏', path: '/profile/favorites', icon: 'star-o' },
+  { title: '浏览历史', path: '/profile/history', icon: 'clock-o' },
 ]
 
 // 商家专属菜单

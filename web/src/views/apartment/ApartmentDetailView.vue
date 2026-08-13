@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { getApartmentDetail } from '@/api/apartment'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment } from '@/types'
+import type { Apartment, BrowseHistoryItem } from '@/types'
 import FeeDetailCard from '@/components/business/FeeDetailCard.vue'
 import FacilityGroup from '@/components/business/FacilityGroup.vue'
 import PhoneActionSheet from '@/components/business/PhoneActionSheet.vue'
@@ -44,6 +44,7 @@ async function fetchDetail() {
   try {
     const aptRes = await getApartmentDetail(apartmentId.value)
     apartment.value = aptRes
+    saveBrowseHistory(aptRes)
   } catch (err: any) {
     if (err?.code === 410001) {
       isOffline.value = true
@@ -51,6 +52,36 @@ async function fetchDetail() {
   } finally {
     loading.value = false
     uiStore.hideLoading()
+  }
+}
+
+const HISTORY_KEY = 'browse_history'
+const MAX_HISTORY = 50
+
+function saveBrowseHistory(apt: Apartment) {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    let list: BrowseHistoryItem[] = []
+    if (raw) {
+      list = JSON.parse(raw)
+      if (!Array.isArray(list)) list = []
+    }
+    list = list.filter(item => item.apartment_id !== apt.id)
+    list.unshift({
+      apartment_id: apt.id,
+      name: apt.name,
+      cover_image: apt.cover_image || '',
+      district_name: apt.district_name || '',
+      street_name: apt.street_name || '',
+      min_monthly_rent: apt.min_monthly_rent ?? null,
+      timestamp: Date.now(),
+    })
+    if (list.length > MAX_HISTORY) {
+      list = list.slice(0, MAX_HISTORY)
+    }
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list))
+  } catch {
+    // 忽略存储错误
   }
 }
 
