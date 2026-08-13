@@ -69,6 +69,12 @@ const router = createRouter({
       meta: { public: false, roles: ['tenant'], title: '我的收藏', hideTabBar: true },
     },
     {
+      path: '/profile/history',
+      name: 'BrowseHistory',
+      component: () => import('@/views/profile/BrowseHistoryView.vue'),
+      meta: { public: true, title: '浏览历史', hideTabBar: true },
+    },
+    {
       path: '/profile/messages',
       name: 'Messages',
       component: () => import('@/views/profile/MessagesView.vue'),
