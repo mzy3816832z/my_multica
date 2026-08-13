@@ -198,3 +198,19 @@ export interface HotDistrict {
   name: string
   count: number
 }
+
+// 地铁站点
+export interface MetroStation {
+  id: number
+  name: string
+  longitude: number
+  latitude: number
+}
+
+// 地铁线路
+export interface MetroLine {
+  id: number
+  name: string
+  code: string
+  stations: MetroStation[]
+}

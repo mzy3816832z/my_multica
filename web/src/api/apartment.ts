@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PaginatedData, Apartment, RoomType, HotDistrict } from '@/types'
+import type { PaginatedData, Apartment, RoomType, HotDistrict, MetroLine } from '@/types'
 
 export interface ApartmentListParams {
   keyword?: string
@@ -9,6 +9,7 @@ export interface ApartmentListParams {
   lease_terms?: string[]
   min_price?: number
   max_price?: number
+  metro_station_ids?: number[]
   sort?: string
   page?: number
   page_size?: number
@@ -32,4 +33,8 @@ export function getRoomTypeDetail(id: number): Promise<RoomType> {
 
 export function getHotDistricts(): Promise<HotDistrict[]> {
   return request.get('/apartments/hot-districts/')
+}
+
+export function getMetroLines(): Promise<MetroLine[]> {
+  return request.get('/metro/lines/')
 }
