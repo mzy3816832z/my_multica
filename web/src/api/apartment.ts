@@ -35,6 +35,14 @@ export function getHotDistricts(): Promise<HotDistrict[]> {
   return request.get('/apartments/hot-districts/')
 }
 
+export function geocodeAddress(address: string): Promise<GeocodeResult> {
+  return request.post('/apartments/geocode/', { address })
+}
+
+export function getNearbyPOIs(id: number): Promise<NearbyData> {
+  return request.get(`/apartments/${id}/nearby/`)
+}
+
 export function getMapConfig(): Promise<MapConfig> {
   return request.get('/apartments/map-config/')
 }
