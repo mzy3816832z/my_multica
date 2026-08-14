@@ -102,8 +102,6 @@ SORT_OPTIONS = {
     'latest': ['-updated_at'],
     'price_asc': [F('min_monthly_rent').asc(nulls_last=True), '-updated_at'],
     'price_desc': [F('min_monthly_rent').desc(nulls_last=True), '-updated_at'],
-    'area_desc': [F('min_area').desc(nulls_last=True), '-updated_at'],
-    'area_asc': [F('min_area').asc(nulls_last=True), '-updated_at'],
 }
 
 
@@ -123,7 +121,7 @@ SORT_OPTIONS = {
         {'name': 'lease_terms', 'in': 'query', 'schema': {'type': 'array', 'items': {'type': 'string'}}, 'description': '租期编码数组（多选）'},
         {'name': 'min_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最低月租金'},
         {'name': 'max_price', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '最高月租金'},
-        {'name': 'sort', 'in': 'query', 'schema': {'type': 'string'}, 'description': '排序方式：latest(默认) / price_asc / price_desc / area_desc / area_asc'},
+        {'name': 'sort', 'in': 'query', 'schema': {'type': 'string'}, 'description': '排序方式：latest(默认) / price_asc / price_desc'},
         {'name': 'metro_station_ids', 'in': 'query', 'schema': {'type': 'array', 'items': {'type': 'integer'}}, 'description': '地铁站点 ID 数组（多选），筛选距站点 ≤1.5km 的房源'},
         {'name': 'page', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '页码，默认 1'},
         {'name': 'page_size', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '每页条数，默认 10，最大 100'},
