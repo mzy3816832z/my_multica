@@ -32,8 +32,10 @@ async function handleClickMessage(msg: Message) {
     return
   }
 
-  if (msg.type === 'first_rejected' || msg.type === 'change_rejected' || msg.type === 'audit_approved') {
+  if (msg.type === 'first_rejected' || msg.type === 'change_rejected') {
     router.push('/profile/apartments/' + msg.related_apartment_id + '/edit')
+  } else if (msg.type === 'audit_approved') {
+    router.push('/apartments/' + msg.related_apartment_id)
   }
 }
 
