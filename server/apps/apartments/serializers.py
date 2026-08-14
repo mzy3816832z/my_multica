@@ -429,6 +429,12 @@ class MerchantApartmentDeleteResponseSerializer(serializers.Serializer):
     deleted = serializers.BooleanField(help_text='是否删除成功')
 
 
+class MerchantApartmentStatusResponseSerializer(serializers.Serializer):
+    """商家房源状态变更响应序列化器（下架/重新上架/撤回）"""
+    apartment_id = serializers.IntegerField(help_text='公寓 ID')
+    status = serializers.CharField(max_length=30, help_text='房源状态')
+
+
 class ApartmentResponseSerializer(serializers.Serializer):
     """公寓发布响应序列化器"""
     apartment_id = serializers.IntegerField(help_text='公寓 ID')
