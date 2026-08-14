@@ -65,6 +65,16 @@ export const auditStatusMap: Record<string, string> = {
   rejected: '已驳回',
 }
 
+// 房源状态映射（审核页展示公寓 status 兜底）
+export const apartmentStatusMap: Record<string, string> = {
+  draft: '草稿',
+  pending_first_review: '待首次审核',
+  first_rejected: '首次审核驳回',
+  published: '已上架',
+  change_reviewing: '变更审核中',
+  offline: '已下架',
+}
+
 // 费用类型映射（水电口径）
 export const feeTypeMap: Record<string, string> = {
   civilian: '民水民电',

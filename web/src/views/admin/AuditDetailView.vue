@@ -6,6 +6,7 @@ import {
   facilityMap,
   leaseTermMap,
   paymentMethodMap,
+  apartmentStatusMap,
   mapDict,
   mapFacilities,
 } from '@/utils/dictMaps'
@@ -56,7 +57,7 @@ async function onApprove() {
     })
     uiStore.showLoading('处理中...')
     await approveAudit(auditId.value, approveWithVerify.value)
-    showToast('已通过')
+    showToast(detail.value?.type === 'change_review' ? '已通过，新版本生效' : '已通过')
     approveWithVerify.value = false
     await loadDetail()
   } catch (err: any) {
@@ -86,7 +87,7 @@ async function onConfirmReject() {
   try {
     uiStore.showLoading('处理中...')
     await rejectAudit(auditId.value, rejectReason.value.trim())
-    showToast('已驳回')
+    showToast(detail.value?.type === 'change_review' ? '已驳回，线上继续展示旧版' : '已驳回')
     showRejectForm.value = false
     rejectReason.value = ''
     await loadDetail()
@@ -105,6 +106,19 @@ function onCancelReject() {
 
 function auditTypeText(type?: string) {
   return type === 'first_review' ? '提交审核' : '变更审核'
+}
+
+function apartmentStatusText(status?: string) {
+  return apartmentStatusMap[status || ''] || status || '-'
+}
+
+// 变更审核单对应房源处于「变更审核中」状态（影子发布，对外展示旧版）
+function isChangeReviewing(): boolean {
+  return (
+    detail.value?.type === 'change_review' &&
+    detail.value?.status === 'pending' &&
+    detail.value?.apartment_status === 'change_reviewing'
+  )
 }
 
 function auditStatusText(status?: string) {
@@ -204,6 +218,9 @@ onMounted(() => {
                 </div>
                 <div class="text-xs text-gray-500 mt-1">
                   {{ auditTypeText(detail.type) }}
+                </div>
+                <div v-if="isChangeReviewing()" class="text-xs text-warning mt-0.5">
+                  {{ apartmentStatusText(detail.apartment_status) }}（对外展示旧版）
                 </div>
                 <div v-if="detail.changed_fields && detail.changed_fields.length > 0" class="text-xs text-danger mt-0.5">
                   变更字段：{{ detail.changed_fields.join('、') }}
@@ -392,6 +409,10 @@ onMounted(() => {
 
 .text-primary {
   color: $primary;
+}
+
+.text-warning {
+  color: $warning;
 }
 
 .changed-field {

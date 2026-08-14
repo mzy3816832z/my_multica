@@ -154,6 +154,7 @@ export interface AuditRecord {
   type_display?: string
   status: 'pending' | 'approved' | 'rejected'
   status_display?: string
+  apartment_status?: string
   submitted_data: unknown
   original_data?: unknown
   changed_fields?: string[]
