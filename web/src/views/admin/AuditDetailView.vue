@@ -9,17 +9,18 @@ import {
   mapDict,
   mapFacilities,
 } from '@/utils/dictMaps'
-import { getDistrictName, getStreetName } from '@/utils/districtMaps'
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { getAdminAuditDetail, approveAudit, rejectAudit, verifyApartment } from '@/api/admin'
 import { useUiStore } from '@/stores/ui'
+import { useDistrictStore } from '@/stores/district'
 import type { AuditRecord } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
+const districtStore = useDistrictStore()
 
 const auditId = ref(Number(route.params.id))
 const detail = ref<AuditRecord | null>(null)
@@ -154,8 +155,8 @@ function formatValue(val: unknown): string {
 const baseFields = [
   { key: 'name', label: '房源名称' },
   { key: 'description', label: '房源描述' },
-  { key: 'district_id', label: '行政区', format: (v: unknown) => getDistrictName(Number(v)) },
-  { key: 'street_id', label: '街道', format: (v: unknown) => getStreetName(Number(v)) },
+  { key: 'district_id', label: '行政区', format: (v: unknown) => districtStore.getDistrictName(Number(v)) },
+  { key: 'street_id', label: '街道', format: (v: unknown) => districtStore.getStreetName(Number(v)) },
   { key: 'detail_address', label: '详细地址' },
   { key: 'contact_phone', label: '联系电话' },
 ]
@@ -169,6 +170,7 @@ watch(() => route.params.id, (newId) => {
 })
 
 onMounted(() => {
+  districtStore.loadDistricts()
   loadDetail()
 })
 </script>
