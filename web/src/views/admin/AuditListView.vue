@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatDateTime } from '@/utils/datetime'
-import { auditTypeMap, auditStatusMap } from '@/utils/dictMaps'
+import { auditTypeMap, auditStatusMap, apartmentStatusMap } from '@/utils/dictMaps'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -27,7 +27,7 @@ const keyword = ref('')
 // 驳回弹框相关状态
 const showRejectForm = ref(false)
 const rejectReason = ref('')
-const rejectTargetId = ref<number | null>(null)
+const rejectTarget = ref<AuditRecord | null>(null)
 const quickReasons = ['图片非实拍', '信息不实', '价格异常', '重复房源']
 
 // 加载列表
@@ -91,15 +91,15 @@ function goDetail(id: number) {
 }
 
 // 快捷通过
-async function onQuickApprove(id: number) {
+async function onQuickApprove(item: AuditRecord) {
   try {
     await showConfirmDialog({
       title: '确认通过',
       message: '审核通过后，房源将正式上架或变更生效，确定继续吗？',
     })
     uiStore.showLoading('处理中...')
-    await approveAudit(id)
-    showToast('已通过')
+    await approveAudit(item.id)
+    showToast(item.type === 'change_review' ? '已通过，新版本生效' : '已通过')
     loadList(true)
   } catch (err: any) {
     if (err?.message === 'cancel') {
@@ -111,8 +111,8 @@ async function onQuickApprove(id: number) {
 }
 
 // 显示驳回弹框
-function onShowReject(id: number) {
-  rejectTargetId.value = id
+function onShowReject(item: AuditRecord) {
+  rejectTarget.value = item
   rejectReason.value = ''
   showRejectForm.value = true
 }
@@ -123,14 +123,14 @@ async function onConfirmReject() {
     showToast('请填写驳回原因')
     return
   }
-  if (!rejectTargetId.value) return
+  if (!rejectTarget.value) return
   try {
     uiStore.showLoading('处理中...')
-    await rejectAudit(rejectTargetId.value, rejectReason.value.trim())
-    showToast('已驳回')
+    await rejectAudit(rejectTarget.value.id, rejectReason.value.trim())
+    showToast(rejectTarget.value.type === 'change_review' ? '已驳回，线上继续展示旧版' : '已驳回')
     showRejectForm.value = false
     rejectReason.value = ''
-    rejectTargetId.value = null
+    rejectTarget.value = null
     loadList(true)
   } catch {
     // 错误已在 request 拦截器中 toast
@@ -143,7 +143,7 @@ async function onConfirmReject() {
 function onCancelReject() {
   showRejectForm.value = false
   rejectReason.value = ''
-  rejectTargetId.value = null
+  rejectTarget.value = null
 }
 
 function auditTypeText(type?: string) {
@@ -152,6 +152,15 @@ function auditTypeText(type?: string) {
 
 function auditStatusText(status?: string) {
   return auditStatusMap[status || ''] || status || '-'
+}
+
+function apartmentStatusText(status?: string) {
+  return apartmentStatusMap[status || ''] || status || '-'
+}
+
+// 变更审核单对应房源处于「变更审核中」状态（影子发布，对外展示旧版）
+function isChangeReviewing(item: AuditRecord): boolean {
+  return item.type === 'change_review' && item.status === 'pending' && item.apartment_status === 'change_reviewing'
 }
 
 function auditStatusType(status?: string): 'primary' | 'success' | 'warning' | 'danger' | 'default' {
@@ -218,6 +227,9 @@ onMounted(() => {
                       <div class="text-xs text-gray-500 mt-1">
                         {{ auditTypeText(item.type) }}
                       </div>
+                      <div v-if="isChangeReviewing(item)" class="text-xs text-warning mt-0.5">
+                        {{ apartmentStatusText(item.apartment_status) }}（对外展示旧版）
+                      </div>
                       <div v-if="item.changed_fields && item.changed_fields.length > 0" class="text-xs text-danger mt-0.5">
                         变更字段：{{ item.changed_fields.join('、') }}
                       </div>
@@ -237,7 +249,7 @@ onMounted(() => {
                 <div v-if="item.status === 'pending'" class="flex border-t border-gray-100">
                   <div
                     class="flex-1 py-2.5 text-center text-sm text-success flex items-center justify-center gap-1"
-                    @click.stop="onQuickApprove(item.id)"
+                    @click.stop="onQuickApprove(item)"
                   >
                     <van-icon name="success" />
                     <span>通过</span>
@@ -245,7 +257,7 @@ onMounted(() => {
                   <div class="w-px bg-gray-100" />
                   <div
                     class="flex-1 py-2.5 text-center text-sm text-danger flex items-center justify-center gap-1"
-                    @click.stop="onShowReject(item.id)"
+                    @click.stop="onShowReject(item)"
                   >
                     <van-icon name="close" />
                     <span>驳回</span>
@@ -330,6 +342,10 @@ onMounted(() => {
 
 .text-primary {
   color: $primary;
+}
+
+.text-warning {
+  color: $warning;
 }
 
 .audit-tabs {
