@@ -36,10 +36,13 @@ from apps.apartments.utils import (
     backfill_apartment_min_rent,
     backfill_apartment_min_area,
     PUBLIC_VISIBLE_STATUSES,
+    get_audit_sensitive_fields,
+    APARTMENT_AUDIT_FIELDS,
+    ROOM_TYPE_AUDIT_FIELDS,
 )
 from apps.audits.models import AuditRecord
 from apps.metro.models import MetroStation
-from core.exceptions import BusinessException, NotFoundException, GoneException
+from core.exceptions import BusinessException, NotFoundException, GoneException, ConflictException
 from core.pagination import StandardPagination
 from core.permissions import IsLandlord
 from core.response import ErrorCode, unified_response, UnifiedErrorResponseSerializer
@@ -854,6 +857,92 @@ def merchant_apartment_detail(request, id):
     return unified_response(data=serializer.data)
 
 
+# 免审即时生效字段（公寓级）
+EXEMPT_APARTMENT_FIELDS = [
+    'description', 'contact_phone', 'property_fee', 'water_fee',
+    'electric_fee', 'service_fee', 'other_fees',
+]
+
+# 公寓快照中包含的字段（用于构建 submitted_data）
+APARTMENT_SNAPSHOT_FIELDS = [
+    'name', 'cover_image', 'description', 'district_id', 'street_id',
+    'detail_address', 'contact_phone', 'longitude', 'latitude',
+    'property_fee', 'water_fee', 'electric_fee', 'service_fee', 'other_fees',
+]
+
+
+def _room_type_field_value(rt, field):
+    """从房型对象（模型实例或请求 dict）中提取指定字段值。"""
+    if isinstance(rt, dict):
+        return rt.get(field)
+    return getattr(rt, field, None)
+
+
+def _canonical_room_field_value(value):
+    """将房型字段值规范化为可排序/可比较形式（图片数组转 tuple、Decimal 转 float）。"""
+    if isinstance(value, (list, tuple)):
+        return tuple(_canonical_room_field_value(v) for v in value)
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+
+
+def _room_type_field_changed(apartment, submitted_room_types, field):
+    """判断房型数组内某 A 类字段是否变化（按多集合比较，对房型顺序不敏感）。"""
+    sort_key = lambda x: (x is None, str(x))
+    current_values = sorted(
+        (
+            _canonical_room_field_value(_room_type_field_value(rt, field))
+            for rt in apartment.room_types.all()
+        ),
+        key=sort_key,
+    )
+    submitted_values = sorted(
+        (
+            _canonical_room_field_value(_room_type_field_value(rt_data, field))
+            for rt_data in submitted_room_types
+        ),
+        key=sort_key,
+    )
+    return current_values != submitted_values
+
+
+def _detect_audit_changes(apartment, data):
+    """
+    检测 A 类必审字段是否发生变化，返回变化的字段 code 列表。
+    A 类字段通过 system_dict category=audit_sensitive_fields 配置，未配置时用默认集。
+    """
+    sensitive = set(get_audit_sensitive_fields())
+    changed = []
+
+    for field in APARTMENT_AUDIT_FIELDS:
+        if field in data and field in sensitive:
+            if getattr(apartment, field) != data[field]:
+                changed.append(field)
+
+    if 'room_types' in data:
+        for field in ROOM_TYPE_AUDIT_FIELDS:
+            code = f'room_types.{field}'
+            if code in sensitive and _room_type_field_changed(apartment, data['room_types'], field):
+                changed.append(code)
+
+    return changed
+
+
+def _build_submitted_snapshot(original_data, data):
+    """
+    基于原快照构建新快照：应用本次请求中所有字段（A 类与免审）的变化。
+    """
+    submitted_data = copy.deepcopy(original_data)
+    for field in APARTMENT_SNAPSHOT_FIELDS:
+        if field in data:
+            val = data[field]
+            submitted_data[field] = float(val) if isinstance(val, Decimal) else val
+    if 'room_types' in data:
+        submitted_data['room_types'] = _build_room_types_from_data(data['room_types'])
+    return submitted_data
+
+
 def merchant_apartment_update(request, id):
     """
     PUT /api/v1/merchant/apartments/{id}
@@ -873,44 +962,24 @@ def merchant_apartment_update(request, id):
 
     data = serializer.validated_data
 
-    # 判断关键字段是否变化
-    KEY_FIELDS = ['name', 'district_id', 'street_id', 'detail_address']
-    key_changed = False
-    for field in KEY_FIELDS:
-        if field in data:
-            current_val = getattr(apartment, field)
-            if current_val != data[field]:
-                key_changed = True
-                break
+    # 检测 A 类必审字段是否变化
+    changed_fields = _detect_audit_changes(apartment, data)
 
     # 构建原房源快照（用于审核记录）
     original_data = _build_apartment_snapshot(apartment)
 
     with transaction.atomic():
-        if key_changed:
-            # 生成变更审核单，原房源保持 published
-            submitted_data = copy.deepcopy(original_data)
-            # 将变更应用到 submitted_data 中
-            NEW_APARTMENT_FIELDS = [
-                'longitude', 'latitude', 'property_fee', 'water_fee',
-                'electric_fee', 'service_fee', 'other_fees',
-            ]
-            for field in data:
-                if field == 'room_types':
-                    submitted_data['room_types'] = _build_room_types_from_data(data['room_types'])
-                elif field in KEY_FIELDS:
-                    submitted_data[field] = data[field]
-                elif field == 'cover_image':
-                    submitted_data['cover_image'] = data[field]
-                elif field == 'description':
-                    submitted_data['description'] = data[field]
-                elif field == 'contact_phone':
-                    submitted_data['contact_phone'] = data[field]
-                elif field in NEW_APARTMENT_FIELDS:
-                    val = data[field]
-                    submitted_data[field] = float(val) if isinstance(val, Decimal) else val
+        if changed_fields:
+            # 同一房源同一时间仅允许一个 pending 变更审核单
+            if apartment.audit_records.filter(
+                type='change_review',
+                status='pending',
+                deleted_at__isnull=True,
+            ).exists():
+                raise ConflictException('已有变更待审核，请等待审核完成')
 
-            changed_fields = [f for f in KEY_FIELDS if f in data and getattr(apartment, f) != data[f]]
+            # 构建新快照（含 A 类与免审字段的全部变更）
+            submitted_data = _build_submitted_snapshot(original_data, data)
 
             audit = AuditRecord.objects.create(
                 apartment=apartment,
@@ -921,8 +990,14 @@ def merchant_apartment_update(request, id):
                 changed_fields=changed_fields,
             )
 
+            # 影子发布置态：published → change_reviewing；offline 保持 offline
+            if apartment.status == 'published':
+                apartment.status = 'change_reviewing'
+                apartment.save(update_fields=['status'])
+
             logger.info(f'[UpdateApartment] change_review created, '
-                        f'landlord={landlord.id}, apartment={apartment.id}, audit={audit.id}')
+                        f'landlord={landlord.id}, apartment={apartment.id}, audit={audit.id}, '
+                        f'changed_fields={changed_fields}')
 
             return unified_response(
                 data={
@@ -932,86 +1007,71 @@ def merchant_apartment_update(request, id):
                 },
                 code=ErrorCode.SUCCESS,
             )
-        else:
-            # 直接更新房源
-            for field in ['name', 'cover_image', 'description', 'contact_phone']:
-                if field in data:
-                    setattr(apartment, field, data[field])
 
-            if 'district_id' in data:
-                apartment.district_id = data['district_id']
-            if 'street_id' in data:
-                apartment.street_id = data['street_id']
-            if 'detail_address' in data:
-                apartment.detail_address = data['detail_address']
+        # 免审字段变更：直接更新，status 保持原值（published 或 offline）
+        for field in EXEMPT_APARTMENT_FIELDS:
+            if field in data:
+                setattr(apartment, field, data[field])
 
-            NEW_DIRECT_FIELDS = [
-                'longitude', 'latitude', 'property_fee', 'water_fee',
-                'electric_fee', 'service_fee', 'other_fees',
-            ]
-            for field in NEW_DIRECT_FIELDS:
-                if field in data:
-                    setattr(apartment, field, data[field])
+        apartment.save()
 
-            apartment.save()
+        # 若传了房型数据，全量替换
+        if 'room_types' in data:
+            # 软删除原有房型（级联软删除租金方案）
+            for rt in apartment.room_types.all():
+                rt.delete()
 
-            # 若传了房型数据，全量替换
-            if 'room_types' in data:
-                # 软删除原有房型（级联软删除租金方案）
-                for rt in apartment.room_types.all():
-                    rt.delete()
+            global_min_rent = None
+            global_min_area = None
+            for rt_data in data['room_types']:
+                room_type = RoomType.objects.create(
+                    apartment=apartment,
+                    name=rt_data['name'],
+                    images=rt_data['images'],
+                    facilities=rt_data.get('facilities', []),
+                    layout_type=rt_data['layout_type'],
+                    window_type=rt_data['window_type'],
+                    floor=rt_data['floor'],
+                    sort=rt_data.get('sort', 0),
+                    area=rt_data.get('area'),
+                    available_date=rt_data.get('available_date'),
+                )
+                room_area = rt_data.get('area')
+                if room_area is not None:
+                    if global_min_area is None or room_area < global_min_area:
+                        global_min_area = room_area
 
-                global_min_rent = None
-                global_min_area = None
-                for rt_data in data['room_types']:
-                    room_type = RoomType.objects.create(
-                        apartment=apartment,
-                        name=rt_data['name'],
-                        images=rt_data['images'],
-                        facilities=rt_data.get('facilities', []),
-                        layout_type=rt_data['layout_type'],
-                        window_type=rt_data['window_type'],
-                        floor=rt_data['floor'],
-                        sort=rt_data.get('sort', 0),
-                        area=rt_data.get('area'),
-                        available_date=rt_data.get('available_date'),
+                for rp_data in rt_data['rental_plans']:
+                    RentalPlan.objects.create(
+                        room_type=room_type,
+                        lease_term=rp_data['lease_term'],
+                        monthly_rent=rp_data['monthly_rent'],
+                        payment_method=rp_data['payment_method'],
                     )
-                    room_area = rt_data.get('area')
-                    if room_area is not None:
-                        if global_min_area is None or room_area < global_min_area:
-                            global_min_area = room_area
+                    if global_min_rent is None or rp_data['monthly_rent'] < global_min_rent:
+                        global_min_rent = rp_data['monthly_rent']
 
-                    for rp_data in rt_data['rental_plans']:
-                        RentalPlan.objects.create(
-                            room_type=room_type,
-                            lease_term=rp_data['lease_term'],
-                            monthly_rent=rp_data['monthly_rent'],
-                            payment_method=rp_data['payment_method'],
-                        )
-                        if global_min_rent is None or rp_data['monthly_rent'] < global_min_rent:
-                            global_min_rent = rp_data['monthly_rent']
+            update_fields = []
+            if global_min_rent is not None:
+                apartment.min_monthly_rent = global_min_rent
+                update_fields.append('min_monthly_rent')
+            if global_min_area is not None:
+                apartment.min_area = global_min_area
+                update_fields.append('min_area')
+            if update_fields:
+                apartment.save(update_fields=update_fields)
 
-                update_fields = []
-                if global_min_rent is not None:
-                    apartment.min_monthly_rent = global_min_rent
-                    update_fields.append('min_monthly_rent')
-                if global_min_area is not None:
-                    apartment.min_area = global_min_area
-                    update_fields.append('min_area')
-                if update_fields:
-                    apartment.save(update_fields=update_fields)
+        logger.info(f'[UpdateApartment] direct update, '
+                    f'landlord={landlord.id}, apartment={apartment.id}')
 
-            logger.info(f'[UpdateApartment] direct update, '
-                        f'landlord={landlord.id}, apartment={apartment.id}')
-
-            return unified_response(
-                data={
-                    'apartment_id': apartment.id,
-                    'audit_id': None,
-                    'updated': True,
-                },
-                code=ErrorCode.SUCCESS,
-            )
+        return unified_response(
+            data={
+                'apartment_id': apartment.id,
+                'audit_id': None,
+                'updated': True,
+            },
+            code=ErrorCode.SUCCESS,
+        )
 
 
 def merchant_apartment_delete(request, id):

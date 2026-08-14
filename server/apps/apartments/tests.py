@@ -907,12 +907,12 @@ class MerchantApartmentUpdateTests(TestCase):
         return str(refresh.access_token)
 
     def test_update_direct_no_key_change(self):
-        """非关键字段变更直接更新"""
+        """免审字段（描述/电话/物业费）变更直接更新，不触发审核"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
         payload = {
-            'cover_image': 'https://example.com/new_cover.jpg',
             'description': '新描述',
             'contact_phone': '13900139000',
+            'property_fee': 200,
         }
         response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
         self.assertEqual(response.status_code, 200)
@@ -921,13 +921,14 @@ class MerchantApartmentUpdateTests(TestCase):
         self.assertIsNone(data['audit_id'])
 
         self.apartment.refresh_from_db()
-        self.assertEqual(self.apartment.cover_image, 'https://example.com/new_cover.jpg')
         self.assertEqual(self.apartment.description, '新描述')
         self.assertEqual(self.apartment.contact_phone, '13900139000')
+        self.assertEqual(self.apartment.property_fee, 200)
         self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(self.apartment.name, '测试公寓')
 
     def test_update_name_triggers_audit(self):
-        """变更名称触发 change_review 审核"""
+        """变更名称触发 change_review 审核，房源置 change_reviewing"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
         payload = {'name': '新公寓名称'}
         response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
@@ -936,9 +937,9 @@ class MerchantApartmentUpdateTests(TestCase):
         self.assertEqual(data['updated'], False)
         self.assertIsNotNone(data['audit_id'])
 
-        # 原房源仍 published
+        # 房源进入变更审核中，库内旧值不变
         self.apartment.refresh_from_db()
-        self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(self.apartment.status, 'change_reviewing')
         self.assertEqual(self.apartment.name, '测试公寓')
 
         # 审核记录存在
@@ -950,7 +951,7 @@ class MerchantApartmentUpdateTests(TestCase):
         self.assertIsNotNone(audit.submitted_data)
 
     def test_update_district_triggers_audit(self):
-        """变更行政区触发 change_review 审核"""
+        """变更行政区触发 change_review 审核，房源置 change_reviewing"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
         payload = {'district_id': self.district2.id, 'street_id': self.street2.id}
         response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
@@ -960,7 +961,7 @@ class MerchantApartmentUpdateTests(TestCase):
 
         self.apartment.refresh_from_db()
         self.assertEqual(self.apartment.district_id, self.district.id)
-        self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(self.apartment.status, 'change_reviewing')
 
     def test_update_detail_address_triggers_audit(self):
         """变更详细地址触发 change_review 审核"""
@@ -975,14 +976,14 @@ class MerchantApartmentUpdateTests(TestCase):
         self.assertEqual(self.apartment.detail_address, '测试路1号')
 
     def test_update_with_room_types_direct(self):
-        """直接更新时支持全量替换房型"""
+        """免审字段变更（房型设施/楼层/租金）时全量替换房型并直接生效"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
         payload = {
-            'cover_image': 'https://example.com/new.jpg',
+            'description': '新描述',
             'room_types': [
                 {
                     'name': '豪华单间',
-                    'images': ['https://example.com/new_room.jpg'],
+                    'images': ['https://example.com/room.jpg'],
                     'facilities': ['wifi'],
                     'layout_type': 'studio',
                     'window_type': 'outer',
@@ -999,12 +1000,167 @@ class MerchantApartmentUpdateTests(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()['data']
         self.assertEqual(data['updated'], True)
+        self.assertIsNone(data['audit_id'])
 
         self.apartment.refresh_from_db()
         self.assertEqual(self.apartment.min_monthly_rent, 3500)
+        self.assertEqual(self.apartment.status, 'published')
         room_types = list(self.apartment.room_types.all())
         self.assertEqual(len(room_types), 1)
         self.assertEqual(room_types[0].name, '豪华单间')
+
+    def test_update_monthly_rent_direct(self):
+        """变更月租金（免审）直接生效，status 保持 published，无审核单"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        payload = {
+            'room_types': [
+                {
+                    'name': '标准单间',
+                    'images': ['https://example.com/room.jpg'],
+                    'facilities': ['air_conditioner'],
+                    'layout_type': 'studio',
+                    'window_type': 'outer',
+                    
+                    'floor': 5,
+                    'sort': 0,
+                    'rental_plans': [
+                        {'lease_term': '1_month', 'monthly_rent': 4000, 'payment_method': 'pay_1_deposit_1'},
+                    ],
+                },
+            ],
+        }
+        response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['updated'], True)
+        self.assertIsNone(data['audit_id'])
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(self.apartment.min_monthly_rent, 4000)
+        self.assertFalse(
+            AuditRecord.objects.filter(
+                apartment=self.apartment, type='change_review', status='pending'
+            ).exists()
+        )
+
+    def test_update_cover_image_triggers_audit(self):
+        """变更封面图（A 类）触发 change_review 审核"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        payload = {'cover_image': 'https://example.com/new_cover.jpg'}
+        response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['updated'], False)
+        self.assertIsNotNone(data['audit_id'])
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'change_reviewing')
+        audit = AuditRecord.objects.get(id=data['audit_id'])
+        self.assertEqual(audit.changed_fields, ['cover_image'])
+
+    def test_update_room_type_layout_triggers_audit(self):
+        """变更房型户型（A 类）触发 change_review，changed_fields 含 room_types.layout_type"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        payload = {
+            'room_types': [
+                {
+                    'name': '标准单间',
+                    'images': ['https://example.com/room.jpg'],
+                    'facilities': ['air_conditioner'],
+                    'layout_type': 'two_bedroom',
+                    'window_type': 'outer',
+                    
+                    'floor': 5,
+                    'sort': 0,
+                    'rental_plans': [
+                        {'lease_term': '1_month', 'monthly_rent': 3000, 'payment_method': 'pay_1_deposit_1'},
+                    ],
+                },
+            ],
+        }
+        response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['updated'], False)
+
+        audit = AuditRecord.objects.get(id=data['audit_id'])
+        self.assertEqual(audit.changed_fields, ['room_types.layout_type'])
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'change_reviewing')
+
+    def test_update_name_and_rent_combined(self):
+        """A 类 + 免审字段同时变更 → 生成审核单，submitted_data 含全部变更"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        payload = {
+            'name': '新名称',
+            'room_types': [
+                {
+                    'name': '标准单间',
+                    'images': ['https://example.com/room.jpg'],
+                    'facilities': ['air_conditioner'],
+                    'layout_type': 'studio',
+                    'window_type': 'outer',
+                    
+                    'floor': 5,
+                    'sort': 0,
+                    'rental_plans': [
+                        {'lease_term': '1_month', 'monthly_rent': 4000, 'payment_method': 'pay_1_deposit_1'},
+                    ],
+                },
+            ],
+        }
+        response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['updated'], False)
+
+        audit = AuditRecord.objects.get(id=data['audit_id'])
+        self.assertEqual(audit.changed_fields, ['name'])
+        self.assertEqual(audit.submitted_data['name'], '新名称')
+        self.assertEqual(audit.submitted_data['room_types'][0]['rental_plans'][0]['monthly_rent'], 4000)
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'change_reviewing')
+
+    def test_update_with_pending_audit_rejected(self):
+        """已存在 pending 变更审核单时再次编辑 A 类字段 → 拒绝"""
+        AuditRecord.objects.create(
+            apartment=self.apartment,
+            type='change_review',
+            status='pending',
+            submitted_data={},
+            changed_fields=['name'],
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        payload = {'name': '再次修改'}
+        response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['code'], 409001)
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.name, '测试公寓')
+        self.assertEqual(self.apartment.status, 'published')
+
+    def test_update_offline_a_class_keeps_offline(self):
+        """offline 房源改 A 类字段 → 生成 change_review 且保持 offline"""
+        self.apartment.status = 'offline'
+        self.apartment.save(update_fields=['status'])
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        payload = {'name': '新名称'}
+        response = self.client.put(f'/api/v1/merchant/apartments/{self.apartment.id}/', payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['updated'], False)
+        self.assertIsNotNone(data['audit_id'])
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'offline')
+        self.assertEqual(self.apartment.name, '测试公寓')
+
+        audit = AuditRecord.objects.get(id=data['audit_id'])
+        self.assertEqual(audit.type, 'change_review')
+        self.assertEqual(audit.changed_fields, ['name'])
 
     def test_update_not_own(self):
         """编辑他人房源返回 404"""

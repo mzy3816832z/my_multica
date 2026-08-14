@@ -10,6 +10,50 @@ from apps.apartments.models import Apartment
 PUBLIC_VISIBLE_STATUSES = ('published', 'change_reviewing')
 
 
+# ============================================================
+# 变更审核触发矩阵（A 类必审字段配置）
+# ============================================================
+
+# A 类必审字段（公寓级），code 与 system_dict category=audit_sensitive_fields 对应
+APARTMENT_AUDIT_FIELDS = [
+    'name',
+    'district_id',
+    'street_id',
+    'detail_address',
+    'longitude',
+    'latitude',
+    'cover_image',
+]
+
+# A 类必审字段（房型级），code 前缀 room_types.
+ROOM_TYPE_AUDIT_FIELDS = ['images', 'layout_type', 'window_type', 'area']
+
+# 默认 A 类必审字段全集（system_dict 未配置时的回退）
+DEFAULT_AUDIT_SENSITIVE_FIELDS = (
+    APARTMENT_AUDIT_FIELDS
+    + [f'room_types.{field}' for field in ROOM_TYPE_AUDIT_FIELDS]
+)
+
+
+def get_audit_sensitive_fields():
+    """
+    读取 A 类必审字段配置（system_dict category=audit_sensitive_fields）。
+    未配置（无任何记录）时回退到默认字段集，保证功能可用且运营可调。
+    """
+    from apps.dicts.models import SystemDict
+
+    codes = list(
+        SystemDict.objects.filter(
+            category='audit_sensitive_fields',
+            is_active=True,
+            deleted_at__isnull=True,
+        ).values_list('code', flat=True)
+    )
+    if not codes:
+        return list(DEFAULT_AUDIT_SENSITIVE_FIELDS)
+    return codes
+
+
 def backfill_apartment_min_rent(apartment: Apartment) -> bool:
     """
     根据该房源下所有未删除房型的租金方案，计算并回填 min_monthly_rent。
