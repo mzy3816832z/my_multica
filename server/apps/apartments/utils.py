@@ -6,6 +6,10 @@ from django.db.models import Min
 from apps.apartments.models import Apartment
 
 
+# 公共端可见房源状态：已上架 或 变更审核中（变更审核期间原房源仍对外可见）
+PUBLIC_VISIBLE_STATUSES = ('published', 'change_reviewing')
+
+
 # ============================================================
 # 变更审核触发矩阵（A 类必审字段配置）
 # ============================================================

@@ -17,6 +17,7 @@ from apps.apartments.serializers import (
     MerchantApartmentDeleteResponseSerializer,
     MerchantApartmentDetailSerializer,
     MerchantApartmentListSerializer,
+    MerchantApartmentStatusResponseSerializer,
     MerchantApartmentUpdateResponseSerializer,
 )
 from core.permissions import IsLandlord
@@ -131,7 +132,91 @@ def merchant_apartment_detail(request, id):
     return views.merchant_apartment_delete(request, id)
 
 
+@extend_schema(
+    request=None,
+    responses={
+        200: MerchantApartmentStatusResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
+    summary='商家下架房源',
+    description='商家将已上架（published）房源下架，仅 published 状态可下架。',
+    tags=['商家房源'],
+    parameters=[
+        {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
+    ],
+    methods=['POST'],
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsLandlord])
+def merchant_apartment_offline(request, id):
+    """
+    POST /api/v1/merchant/apartments/<id>/offline  -> 下架房源
+    """
+    return views.merchant_apartment_offline(request, id)
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: MerchantApartmentStatusResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
+    summary='商家重新上架房源',
+    description='商家将已下架（offline）房源重新上架，仅 offline 状态可上架；存在 pending 审核单时拒绝，否则免审直接上架。',
+    tags=['商家房源'],
+    parameters=[
+        {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
+    ],
+    methods=['POST'],
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsLandlord])
+def merchant_apartment_online(request, id):
+    """
+    POST /api/v1/merchant/apartments/<id>/online  -> 重新上架房源
+    """
+    return views.merchant_apartment_online(request, id)
+
+
+@extend_schema(
+    request=None,
+    responses={
+        200: MerchantApartmentStatusResponseSerializer,
+        400: UnifiedErrorResponseSerializer,
+        401: UnifiedErrorResponseSerializer,
+        403: UnifiedErrorResponseSerializer,
+        404: UnifiedErrorResponseSerializer,
+    },
+    summary='商家撤回房源',
+    description=(
+        '商家撤回房源。pending_first_review 撤回为 draft 并软删除首次审核单；'
+        'change_reviewing 撤回为 published 并软删除变更审核单；其他状态拒绝。'
+    ),
+    tags=['商家房源'],
+    parameters=[
+        {'name': 'id', 'in': 'path', 'schema': {'type': 'integer'}, 'description': '公寓 ID'},
+    ],
+    methods=['POST'],
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsLandlord])
+def merchant_apartment_withdraw(request, id):
+    """
+    POST /api/v1/merchant/apartments/<id>/withdraw  -> 撤回房源
+    """
+    return views.merchant_apartment_withdraw(request, id)
+
+
 urlpatterns = [
     path('', merchant_apartments, name='merchant-apartments'),
     path('<int:id>/', merchant_apartment_detail, name='merchant-apartment-detail'),
+    path('<int:id>/offline/', merchant_apartment_offline, name='merchant-apartment-offline'),
+    path('<int:id>/online/', merchant_apartment_online, name='merchant-apartment-online'),
+    path('<int:id>/withdraw/', merchant_apartment_withdraw, name='merchant-apartment-withdraw'),
 ]

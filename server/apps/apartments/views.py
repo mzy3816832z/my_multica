@@ -1104,6 +1104,116 @@ def merchant_apartment_delete(request, id):
     )
 
 
+def merchant_apartment_offline(request, id):
+    """
+    POST /api/v1/merchant/apartments/{id}/offline
+    商家下架房源
+    （由 merchant_urls.py 中的外层视图统一添加 @api_view 和 @permission_classes）
+    """
+    landlord = request.user
+    try:
+        apartment = Apartment.objects.get(id=id, landlord=landlord)
+    except Apartment.DoesNotExist:
+        raise NotFoundException('房源不存在')
+
+    if apartment.status != 'published':
+        raise BusinessException('仅已上架房源可下架', code=ErrorCode.BUSINESS_ERROR)
+
+    apartment.status = 'offline'
+    apartment.save(update_fields=['status'])
+
+    logger.info(f'[OfflineApartment] landlord={landlord.id}, apartment={id}')
+
+    return unified_response(
+        data={
+            'apartment_id': apartment.id,
+            'status': apartment.status,
+        },
+        code=ErrorCode.SUCCESS,
+    )
+
+
+def merchant_apartment_online(request, id):
+    """
+    POST /api/v1/merchant/apartments/{id}/online
+    商家重新上架房源（免审）
+    （由 merchant_urls.py 中的外层视图统一添加 @api_view 和 @permission_classes）
+    """
+    landlord = request.user
+    try:
+        apartment = Apartment.objects.get(id=id, landlord=landlord)
+    except Apartment.DoesNotExist:
+        raise NotFoundException('房源不存在')
+
+    if apartment.status != 'offline':
+        raise BusinessException('仅已下架房源可重新上架', code=ErrorCode.BUSINESS_ERROR)
+
+    # 若存在 pending 的首次/变更审核单，拒绝重新上架
+    has_pending_audit = apartment.audit_records.filter(
+        type__in=['first_review', 'change_review'],
+        status='pending',
+        deleted_at__isnull=True,
+    ).exists()
+    if has_pending_audit:
+        raise BusinessException('有变更待审核，暂无法重新上架', code=ErrorCode.BUSINESS_ERROR)
+
+    apartment.status = 'published'
+    apartment.save(update_fields=['status'])
+
+    logger.info(f'[OnlineApartment] landlord={landlord.id}, apartment={id}')
+
+    return unified_response(
+        data={
+            'apartment_id': apartment.id,
+            'status': apartment.status,
+        },
+        code=ErrorCode.SUCCESS,
+    )
+
+
+def merchant_apartment_withdraw(request, id):
+    """
+    POST /api/v1/merchant/apartments/{id}/withdraw
+    商家撤回房源（首次审核撤回 / 变更审核撤回）
+    （由 merchant_urls.py 中的外层视图统一添加 @api_view 和 @permission_classes）
+    """
+    landlord = request.user
+    try:
+        apartment = Apartment.objects.get(id=id, landlord=landlord)
+    except Apartment.DoesNotExist:
+        raise NotFoundException('房源不存在')
+
+    if apartment.status == 'pending_first_review':
+        target_status = 'draft'
+        audit_type = 'first_review'
+    elif apartment.status == 'change_reviewing':
+        target_status = 'published'
+        audit_type = 'change_review'
+    else:
+        raise BusinessException('当前状态不可撤回', code=ErrorCode.BUSINESS_ERROR)
+
+    with transaction.atomic():
+        # 软删除关联 pending 审核单
+        apartment.audit_records.filter(
+            type=audit_type,
+            status='pending',
+            deleted_at__isnull=True,
+        ).update(deleted_at=timezone.now())
+
+        apartment.status = target_status
+        apartment.save(update_fields=['status'])
+
+    logger.info(f'[WithdrawApartment] landlord={landlord.id}, apartment={id}, status={target_status}')
+
+    return unified_response(
+        data={
+            'apartment_id': apartment.id,
+            'status': apartment.status,
+        },
+        code=ErrorCode.SUCCESS,
+    )
+
+
 def _build_room_types_from_data(room_types_data):
     """
     从请求数据构建房型快照列表
