@@ -1047,6 +1047,204 @@ class MerchantApartmentDeleteTests(TestCase):
 
 
 # ============================================================
+# 商家下架 / 重新上架 / 撤回接口单元测试
+# ============================================================
+
+class MerchantApartmentOfflineOnlineWithdrawTests(TestCase):
+    """商家下架 / 重新上架 / 撤回接口测试"""
+
+    def setUp(self):
+        self.client = APIClient()
+
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+
+        self.landlord = User.objects.create(phone='13800138000', password="fake", role='landlord', is_active=True)
+        self.landlord_token = self._get_token(self.landlord)
+
+        self.other_landlord = User.objects.create(phone='13800138001', password="fake", role='landlord', is_active=True)
+        self.tenant = User.objects.create(phone='13900139000', password="fake", role='tenant', is_active=True)
+        self.tenant_token = self._get_token(self.tenant)
+
+        self.apartment = Apartment.objects.create(
+            landlord=self.landlord,
+            name='测试公寓',
+            cover_image='https://example.com/cover.jpg',
+            description='测试描述',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路1号',
+            contact_phone='13800138000',
+            status='published',
+            min_monthly_rent=3000,
+        )
+
+    def _get_token(self, user):
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['phone'] = user.phone
+        refresh['username'] = user.username
+        return str(refresh.access_token)
+
+    # ---- 下架 ----
+
+    def test_offline_success(self):
+        """已上架房源下架成功，状态变 offline，公共列表不再展示"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/offline/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['apartment_id'], self.apartment.id)
+        self.assertEqual(data['status'], 'offline')
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'offline')
+
+        list_response = self.client.get('/api/v1/apartments/')
+        ids = [item['id'] for item in list_response.json()['data']['items']]
+        self.assertNotIn(self.apartment.id, ids)
+
+    def test_offline_not_published(self):
+        """非 published 状态房源下架失败"""
+        self.apartment.status = 'offline'
+        self.apartment.save(update_fields=['status'])
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/offline/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['code'], 400002)
+
+    def test_offline_not_own(self):
+        """下架他人房源返回 404"""
+        token = self._get_token(self.other_landlord)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/offline/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['code'], 404001)
+
+    def test_offline_not_landlord(self):
+        """非商家角色下架返回 403"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tenant_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/offline/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_offline_unauthorized(self):
+        """未登录下架返回 401"""
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/offline/')
+        self.assertEqual(response.status_code, 401)
+
+    # ---- 重新上架 ----
+
+    def test_online_success(self):
+        """已下架无 pending 审核房源重新上架成功，免审，不生成审核单"""
+        self.apartment.status = 'offline'
+        self.apartment.save(update_fields=['status'])
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/online/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['status'], 'published')
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(AuditRecord.objects.filter(apartment=self.apartment).count(), 0)
+
+    def test_online_with_pending_audit_rejected(self):
+        """已下架但有 pending 审核单时重新上架被拒绝"""
+        self.apartment.status = 'offline'
+        self.apartment.save(update_fields=['status'])
+        AuditRecord.objects.create(
+            apartment=self.apartment,
+            type='change_review',
+            status='pending',
+            submitted_data={},
+            changed_fields=['name'],
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/online/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['code'], 400002)
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'offline')
+
+    def test_online_not_offline(self):
+        """非 offline 状态房源重新上架失败"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/online/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['code'], 400002)
+
+    def test_online_not_landlord(self):
+        """非商家角色重新上架返回 403"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tenant_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/online/')
+        self.assertEqual(response.status_code, 403)
+
+    # ---- 撤回 ----
+
+    def test_withdraw_first_review(self):
+        """待首次审核房源撤回为 draft，软删除 pending 首次审核单"""
+        self.apartment.status = 'pending_first_review'
+        self.apartment.save(update_fields=['status'])
+        audit = AuditRecord.objects.create(
+            apartment=self.apartment,
+            type='first_review',
+            status='pending',
+            submitted_data={},
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/withdraw/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['status'], 'draft')
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'draft')
+
+        audit.refresh_from_db()
+        self.assertIsNotNone(audit.deleted_at)
+
+    def test_withdraw_change_reviewing(self):
+        """变更审核中房源撤回为 published，软删除 pending 变更审核单"""
+        self.apartment.status = 'change_reviewing'
+        self.apartment.save(update_fields=['status'])
+        audit = AuditRecord.objects.create(
+            apartment=self.apartment,
+            type='change_review',
+            status='pending',
+            submitted_data={},
+            changed_fields=['name'],
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/withdraw/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['status'], 'published')
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'published')
+
+        audit.refresh_from_db()
+        self.assertIsNotNone(audit.deleted_at)
+
+    def test_withdraw_published_rejected(self):
+        """已上架房源撤回被拒绝"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/withdraw/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['code'], 400002)
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'published')
+
+    def test_withdraw_not_landlord(self):
+        """非商家撤回返回 403"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.tenant_token}')
+        response = self.client.post(f'/api/v1/merchant/apartments/{self.apartment.id}/withdraw/')
+        self.assertEqual(response.status_code, 403)
+
+
+# ============================================================
 # 商家发布房源接口单元测试
 # ============================================================
 
