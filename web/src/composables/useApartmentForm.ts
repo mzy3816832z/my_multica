@@ -1,5 +1,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { uploadImage } from '@/api/upload'
+import { geocodeAddress } from '@/api/apartment'
+import { useDistrictStore } from '@/stores/district'
 
 export interface RoomTypeFormItem {
   id?: number
@@ -27,6 +29,8 @@ export interface ApartmentForm {
   district_id: number | undefined
   street_id: number | undefined
   detail_address: string
+  longitude: number | null
+  latitude: number | null
   contact_phone: string
   property_fee: number | undefined
   water_fee: string
@@ -93,6 +97,8 @@ export function useApartmentForm() {
     district_id: undefined,
     street_id: undefined,
     detail_address: '',
+    longitude: null,
+    latitude: null,
     contact_phone: '',
     property_fee: undefined,
     water_fee: '',
@@ -133,6 +139,77 @@ export function useApartmentForm() {
     form.district_id = val.district_id
     form.street_id = val.street_id
   }, { deep: true })
+
+  // ================= 房源定位 =================
+  type LocationStatus = 'idle' | 'locating' | 'located' | 'failed'
+
+  const districtStore = useDistrictStore()
+  const locationStatus = ref<LocationStatus>('idle')
+
+  function setLocation(lng: number | null, lat: number | null) {
+    form.longitude = lng
+    form.latitude = lat
+    locationStatus.value = lng != null && lat != null ? 'located' : 'idle'
+  }
+
+  async function geocodeLocation() {
+    if (form.district_id == null || form.street_id == null) {
+      showToast('请先选择行政区与街道')
+      return
+    }
+    if (!form.detail_address.trim()) {
+      showToast('请先填写详细门牌号')
+      return
+    }
+
+    if (!districtStore.loaded) {
+      try {
+        await districtStore.loadDistricts()
+      } catch {
+      }
+    }
+
+    const districtName = districtStore.getDistrictName(form.district_id)
+    const streetName = districtStore.getStreetName(form.street_id)
+    if (districtName === '-' || streetName === '-') {
+      locationStatus.value = 'failed'
+      showToast('定位失败，可在地图上手动点选')
+      return
+    }
+
+    const address = `上海市${districtName}${streetName}${form.detail_address.trim()}`
+    locationStatus.value = 'locating'
+    try {
+      const res = await geocodeAddress(address)
+      const lng = Number(res.longitude)
+      const lat = Number(res.latitude)
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+        locationStatus.value = 'failed'
+        showToast('定位失败，可在地图上手动点选')
+        return
+      }
+      form.longitude = lng
+      form.latitude = lat
+      locationStatus.value = 'located'
+      showToast('定位成功')
+    } catch {
+      locationStatus.value = 'failed'
+      showToast('定位失败，可在地图上手动点选')
+    }
+  }
+
+  let geocodeTimer: ReturnType<typeof setTimeout> | null = null
+  watch(
+    () => [form.district_id, form.street_id, form.detail_address] as const,
+    ([districtId, streetId, address]) => {
+      if (districtId == null || streetId == null || !(address || '').trim()) return
+      if (locationStatus.value === 'located' || locationStatus.value === 'locating') return
+      if (geocodeTimer) clearTimeout(geocodeTimer)
+      geocodeTimer = setTimeout(() => {
+        geocodeLocation()
+      }, 800)
+    },
+  )
 
   const coverUploader = ref<HTMLInputElement | null>(null)
   const uploadingCover = ref(false)
@@ -552,6 +629,8 @@ export function useApartmentForm() {
       district_id: form.district_id as number,
       street_id: form.street_id as number,
       detail_address: form.detail_address.trim(),
+      longitude: form.longitude,
+      latitude: form.latitude,
       contact_phone: form.contact_phone.trim(),
       property_fee: form.property_fee !== undefined && form.property_fee !== null ? Number(form.property_fee) : undefined,
       water_fee: form.water_fee || undefined,
@@ -623,6 +702,8 @@ export function useApartmentForm() {
           district_id: draft.district_id ?? undefined,
           street_id: draft.street_id ?? undefined,
           detail_address: draft.detail_address || '',
+          longitude: draft.longitude ?? null,
+          latitude: draft.latitude ?? null,
           contact_phone: draft.contact_phone || '',
           property_fee: draft.property_fee ?? undefined,
           water_fee: draft.water_fee || '',
@@ -637,6 +718,8 @@ export function useApartmentForm() {
             street_id: draft.street_id,
           }
         }
+        locationStatus.value =
+          form.longitude != null && form.latitude != null ? 'located' : 'idle'
       }
     } catch {
     }
@@ -660,6 +743,9 @@ export function useApartmentForm() {
     rentalPlanErrors,
     clearRentalPlanError,
     districtValue,
+    locationStatus,
+    setLocation,
+    geocodeLocation,
     coverUploader,
     uploadingCover,
     triggerCoverUpload,

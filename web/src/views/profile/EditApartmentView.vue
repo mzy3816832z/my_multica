@@ -6,6 +6,7 @@ import { useUiStore } from '@/stores/ui'
 import { getMerchantApartmentDetail, updateApartment } from '@/api/merchant'
 import { useApartmentForm } from '@/composables/useApartmentForm'
 import { mapDict, layoutTypeMap } from '@/utils/dictMaps'
+import LocationPicker from '@/components/business/LocationPicker.vue'
 import type { RoomType, RentalPlan } from '@/types'
 
 const router = useRouter()
@@ -21,6 +22,9 @@ const {
   roomFormErrors,
   rentalPlanErrors,
   districtValue,
+  locationStatus,
+  setLocation,
+  geocodeLocation,
   coverUploader,
   uploadingCover,
   triggerCoverUpload,
@@ -78,6 +82,7 @@ async function loadApartmentDetail() {
     form.district_id = data.district_id
     form.street_id = data.street_id
     form.detail_address = data.detail_address || ''
+    setLocation(data.longitude ?? null, data.latitude ?? null)
     form.contact_phone = data.contact_phone || ''
     form.property_fee = data.property_fee ?? undefined
     form.water_fee = data.water_fee || ''
@@ -213,6 +218,18 @@ onMounted(() => {
           class="bg-gray-50 rounded-lg"
         />
         <div v-if="formErrors.detail_address" class="text-danger text-xs mt-1">{{ formErrors.detail_address }}</div>
+      </div>
+
+      <!-- 房源位置 -->
+      <div class="bg-white rounded-xl p-4">
+        <div class="text-sm font-bold text-gray-900 mb-3">房源位置</div>
+        <LocationPicker
+          :longitude="form.longitude"
+          :latitude="form.latitude"
+          :status="locationStatus"
+          @update="(v) => setLocation(v.longitude, v.latitude)"
+          @relocate="geocodeLocation"
+        />
       </div>
 
       <!-- 联系电话 -->

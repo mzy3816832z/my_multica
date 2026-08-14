@@ -3,8 +3,11 @@
 商家已上架房源管理接口单元测试
 """
 from datetime import timedelta
+from io import StringIO
+from unittest.mock import patch
 
-from django.test import TestCase
+from django.core.management import call_command
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -1677,3 +1680,76 @@ class ApartmentCompareTests(TestCase):
         """ids 非法返回参数错误"""
         response = self.client.get(self.url, {'ids': 'abc,def'})
         self.assertEqual(response.json()['code'], 400001)
+
+
+# ============================================================
+# 存量房源补坐标管理命令测试
+# ============================================================
+
+class BackfillApartmentCoordsTests(TestCase):
+    """存量房源补坐标管理命令测试"""
+
+    def setUp(self):
+        self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
+        self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
+        self.landlord = User.objects.create(phone='13800138000', password="fake", role='landlord', is_active=True)
+        self.apartment = Apartment.objects.create(
+            landlord=self.landlord,
+            name='测试公寓',
+            cover_image='https://example.com/cover.jpg',
+            description='描述',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路1号',
+            contact_phone='13800138000',
+            status='published',
+            min_monthly_rent=3000,
+        )
+
+    @override_settings(AMAP_KEY='')
+    def test_exit_when_key_missing(self):
+        """AMAP_KEY 未配置时提示并退出"""
+        out = StringIO()
+        call_command('backfill_apartment_coords', stdout=out)
+        self.assertIn('AMAP_KEY 未配置', out.getvalue())
+        self.apartment.refresh_from_db()
+        self.assertIsNone(self.apartment.longitude)
+
+    @override_settings(AMAP_KEY='test_key')
+    @patch('apps.apartments.management.commands.backfill_apartment_coords.geocode')
+    def test_backfill_success(self, mock_geocode):
+        """地理编码成功时写入经纬度"""
+        mock_geocode.return_value = {'longitude': 121.5, 'latitude': 31.2}
+        call_command('backfill_apartment_coords')
+        self.apartment.refresh_from_db()
+        self.assertEqual(float(self.apartment.longitude), 121.5)
+        self.assertEqual(float(self.apartment.latitude), 31.2)
+
+    @override_settings(AMAP_KEY='test_key')
+    @patch('apps.apartments.management.commands.backfill_apartment_coords.geocode')
+    def test_backfill_skip_failure(self, mock_geocode):
+        """地理编码失败时跳过，不写入"""
+        mock_geocode.return_value = None
+        call_command('backfill_apartment_coords')
+        self.apartment.refresh_from_db()
+        self.assertIsNone(self.apartment.longitude)
+        self.assertIsNone(self.apartment.latitude)
+
+    @override_settings(AMAP_KEY='test_key')
+    @patch('apps.apartments.management.commands.backfill_apartment_coords.geocode')
+    def test_dry_run_does_not_write(self, mock_geocode):
+        """dry-run 模式不写入数据库"""
+        mock_geocode.return_value = {'longitude': 121.5, 'latitude': 31.2}
+        call_command('backfill_apartment_coords', '--dry-run')
+        self.apartment.refresh_from_db()
+        self.assertIsNone(self.apartment.longitude)
+        self.assertIsNone(self.apartment.latitude)
+
+    @override_settings(AMAP_KEY='test_key')
+    @patch('apps.apartments.management.commands.backfill_apartment_coords.geocode')
+    def test_backfill_skips_deleted(self, mock_geocode):
+        """已删除房源不被处理"""
+        mock_geocode.return_value = {'longitude': 121.5, 'latitude': 31.2}
+        self.apartment.delete()
+        call_command('backfill_apartment_coords')
+        mock_geocode.assert_not_called()

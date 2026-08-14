@@ -17,6 +17,7 @@ declare module 'vue' {
     FacilityGroup: typeof import('./components/business/FacilityGroup.vue')['default']
     FeeDetailCard: typeof import('./components/business/FeeDetailCard.vue')['default']
     LocationModule: typeof import('./components/business/LocationModule.vue')['default']
+    LocationPicker: typeof import('./components/business/LocationPicker.vue')['default']
     PhoneActionSheet: typeof import('./components/business/PhoneActionSheet.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

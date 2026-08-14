@@ -8,6 +8,8 @@ export interface CreateApartmentPayload {
   district_id: number
   street_id: number
   detail_address: string
+  longitude?: number | null
+  latitude?: number | null
   contact_phone: string
   property_fee?: number
   water_fee?: string
@@ -55,6 +57,8 @@ export interface UpdateApartmentPayload {
   district_id?: number
   street_id?: number
   detail_address?: string
+  longitude?: number | null
+  latitude?: number | null
   contact_phone?: string
   property_fee?: number
   water_fee?: string
