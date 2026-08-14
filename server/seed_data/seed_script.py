@@ -190,6 +190,19 @@ SYSTEM_DICTS = [
 
     # 审核驳回原因
     {'category': 'reject_reason', 'code': 'fake_image', 'label': '图片非实拍', 'sort': 1},
+
+    # 变更审核敏感字段（A 类必审字段）
+    {'category': 'audit_sensitive_fields', 'code': 'name', 'label': '公寓名称', 'sort': 1},
+    {'category': 'audit_sensitive_fields', 'code': 'district_id', 'label': '行政区', 'sort': 2},
+    {'category': 'audit_sensitive_fields', 'code': 'street_id', 'label': '街道/镇', 'sort': 3},
+    {'category': 'audit_sensitive_fields', 'code': 'detail_address', 'label': '详细地址', 'sort': 4},
+    {'category': 'audit_sensitive_fields', 'code': 'longitude', 'label': '经度', 'sort': 5},
+    {'category': 'audit_sensitive_fields', 'code': 'latitude', 'label': '纬度', 'sort': 6},
+    {'category': 'audit_sensitive_fields', 'code': 'cover_image', 'label': '封面图', 'sort': 7},
+    {'category': 'audit_sensitive_fields', 'code': 'room_types.images', 'label': '房型图片', 'sort': 8},
+    {'category': 'audit_sensitive_fields', 'code': 'room_types.layout_type', 'label': '户型', 'sort': 9},
+    {'category': 'audit_sensitive_fields', 'code': 'room_types.window_type', 'label': '内外窗', 'sort': 10},
+    {'category': 'audit_sensitive_fields', 'code': 'room_types.area', 'label': '面积', 'sort': 11},
 ]
 
 

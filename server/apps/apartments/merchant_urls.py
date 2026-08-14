@@ -89,9 +89,10 @@ def merchant_apartments(request):
     },
     summary='商家编辑房源',
     description=(
-        '编辑商家自有房源。若 name、district_id、street_id、detail_address '
-        '任一字段变化，则生成 change_review 审核单，原房源仍 published；'
-        '否则直接更新房源及关联房型。'
+        '编辑商家自有房源。若 A 类必审字段（名称、位置、坐标、封面图，'
+        '以及房型图片/户型/内外窗/面积）任一变化，则生成 change_review 审核单'
+        '并将房源置为 change_reviewing（影子发布，对外展示旧版）；'
+        '否则直接更新（价格、描述、联系方式、费用、设施等免审字段即时生效）。'
     ),
     tags=['商家房源'],
     parameters=[

@@ -50,7 +50,11 @@ def test_seed_districts_hierarchy(seeded_db):
 @pytest.mark.django_db
 def test_seed_system_dict_categories(seeded_db):
     """验证字典分类都存在"""
-    expected_categories = {'layout_type', 'facility', 'lease_term', 'payment_method', 'window_type', 'window_orientation', 'fee_type'}
+    expected_categories = {
+        'layout_type', 'facility', 'lease_term', 'payment_method',
+        'window_type', 'window_orientation', 'fee_type',
+        'facility_group', 'reject_reason', 'audit_sensitive_fields',
+    }
     actual_categories = set(
         SystemDict.objects.values_list('category', flat=True).distinct()
     )
