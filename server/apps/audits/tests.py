@@ -592,6 +592,28 @@ class AdminAuditApproveTests(TestCase):
         self.assertEqual(change_audit.status, 'approved')
         self.assertEqual(change_audit.reviewer_id, self.admin.id)
 
+    def test_approve_change_review_sets_published(self):
+        """变更审核通过：change_reviewing 回写为 published"""
+        self.apartment.status = 'change_reviewing'
+        self.apartment.save()
+
+        change_audit = AuditRecord.objects.create(
+            apartment=self.apartment,
+            type='change_review',
+            status='pending',
+            submitted_data={'name': '新名称'},
+            original_data={'name': '测试公寓'},
+            changed_fields=['name'],
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
+        response = self.client.post(f'/api/v1/admin/audits/{change_audit.id}/approve/')
+        self.assertEqual(response.status_code, 200)
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(self.apartment.name, '新名称')
+
     def test_approve_not_admin(self):
         """非管理员返回 403"""
         tenant = User.objects.create(phone='13900139000', password="fake", role='tenant', is_active=True)
@@ -700,6 +722,35 @@ class AdminAuditRejectTests(TestCase):
         msg = Message.objects.filter(user=self.landlord, related_audit=change_audit).first()
         self.assertIsNotNone(msg)
         self.assertEqual(msg.type, 'change_rejected')
+
+    def test_reject_change_review_from_reviewing(self):
+        """变更审核驳回：change_reviewing 恢复为 published"""
+        self.apartment.status = 'change_reviewing'
+        self.apartment.save()
+
+        change_audit = AuditRecord.objects.create(
+            apartment=self.apartment,
+            type='change_review',
+            status='pending',
+            submitted_data={'name': '新名称'},
+            original_data={'name': '测试公寓'},
+            changed_fields=['name'],
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.admin_token}')
+        response = self.client.post(
+            f'/api/v1/admin/audits/{change_audit.id}/reject/',
+            {'reject_reason': '名称不符合规范'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.apartment.refresh_from_db()
+        self.assertEqual(self.apartment.status, 'published')
+        self.assertEqual(self.apartment.name, '测试公寓')
+
+        change_audit.refresh_from_db()
+        self.assertEqual(change_audit.status, 'rejected')
 
     def test_reject_without_reason(self):
         """驳回未填原因返回 400"""

@@ -30,10 +30,11 @@ from core.response import UnifiedErrorResponseSerializer
         401: UnifiedErrorResponseSerializer,
         403: UnifiedErrorResponseSerializer,
     },
-    summary='商家已上架房源列表',
-    description='返回当前登录商家所有已上架（published）的房源列表，支持分页。',
+    summary='商家房源列表',
+    description='返回当前登录商家的房源列表，支持分页。默认返回已上架（published）房源；可通过 status 参数筛选（published / change_reviewing / offline / pending_first_review / first_rejected / draft，支持逗号分隔多值）。',
     tags=['商家房源'],
     parameters=[
+        {'name': 'status', 'in': 'query', 'schema': {'type': 'string'}, 'description': '房源状态筛选（可选，默认 published），支持逗号分隔多值'},
         {'name': 'page', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '页码，默认 1'},
         {'name': 'page_size', 'in': 'query', 'schema': {'type': 'integer'}, 'description': '每页条数，默认 10，最大 100'},
     ],

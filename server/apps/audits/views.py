@@ -184,7 +184,7 @@ def audit_detail(request, id):
     summary='通过审核',
     description=(
         '管理员通过审核。首次审核通过将公寓置为 published；'
-        '变更审核通过后将 submitted_data 快照覆盖原房源（房型全量替换）。'
+        '变更审核通过后将 submitted_data 快照覆盖原房源（房型全量替换）并回写 status=published。'
     ),
     tags=['管理员审核'],
     parameters=[
@@ -221,6 +221,8 @@ def audit_approve(request, id):
             apartment.save(update_fields=['status'])
         elif audit.type == 'change_review':
             _apply_submitted_data(apartment, audit.submitted_data)
+            apartment.status = 'published'
+            apartment.save(update_fields=['status'])
 
         if verified:
             apartment.verified = True
@@ -258,7 +260,7 @@ def audit_approve(request, id):
     summary='驳回审核',
     description=(
         '管理员驳回审核。首次审核驳回将公寓置为 first_rejected；'
-        '变更审核驳回保留原房源 published 状态，审核单作废。'
+        '变更审核驳回将公寓从 change_reviewing 恢复为 published，旧版继续展示，审核单作废。'
         '驳回后发送站内信与短信通知商家。'
     ),
     tags=['管理员审核'],
@@ -296,7 +298,10 @@ def audit_reject(request, id):
             # 首次审核驳回：公寓置为 first_rejected
             apartment.status = 'first_rejected'
             apartment.save(update_fields=['status'])
-        # 变更审核驳回：原房源保持 published，无需修改
+        elif audit.type == 'change_review':
+            # 变更审核驳回：从 change_reviewing 恢复为 published，旧版继续展示
+            apartment.status = 'published'
+            apartment.save(update_fields=['status'])
 
         # 更新审核单状态
         audit.status = 'rejected'

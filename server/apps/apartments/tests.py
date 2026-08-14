@@ -125,6 +125,27 @@ class PublicApartmentListTests(TestCase):
         self.assertIn(self.apartment_b.id, ids)
         self.assertNotIn(self.apartment_c.id, ids)
 
+    def test_list_includes_change_reviewing(self):
+        """列表包含变更审核中（change_reviewing）房源（影子发布展示旧版）"""
+        change_apt = Apartment.objects.create(
+            landlord=self.landlord,
+            name='变更审核中公寓',
+            cover_image='https://example.com/change.jpg',
+            description='变更审核中',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路4号',
+            contact_phone='13800138003',
+            status='change_reviewing',
+            min_monthly_rent=2600,
+        )
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['total'], 3)
+        ids = [item['id'] for item in data['items']]
+        self.assertIn(change_apt.id, ids)
+
     def test_list_order_by_updated_at_desc(self):
         """列表按审核通过时间（updated_at）倒序"""
         response = self.client.get(self.url)
@@ -363,6 +384,26 @@ class PublicApartmentDetailTests(TestCase):
         response = self.client.get(f'/api/v1/apartments/{unpublished.id}/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['code'], 410001)
+
+    def test_detail_change_reviewing_visible(self):
+        """变更审核中房源详情仍可访问（影子发布展示旧版）"""
+        change_apt = Apartment.objects.create(
+            landlord=self.landlord,
+            name='变更审核中公寓',
+            cover_image='https://example.com/change.jpg',
+            description='变更审核中',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路2号',
+            contact_phone='13800138000',
+            status='change_reviewing',
+            min_monthly_rent=3000,
+        )
+        response = self.client.get(f'/api/v1/apartments/{change_apt.id}/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['id'], change_apt.id)
+        self.assertEqual(data['name'], '变更审核中公寓')
 
     def test_detail_not_exist(self):
         """获取不存在的房源返回 404"""
@@ -649,6 +690,48 @@ class MerchantApartmentListTests(TestCase):
         data = response.json()['data']
         self.assertEqual(data['total'], 1)
         self.assertEqual(data['items'][0]['id'], self.apartment_a.id)
+
+    def test_list_filter_by_status_offline(self):
+        """按 status=offline 筛选已下架房源"""
+        offline_apt = Apartment.objects.create(
+            landlord=self.landlord,
+            name='已下架公寓',
+            cover_image='https://example.com/offline.jpg',
+            description='已下架',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路4号',
+            contact_phone='13800138000',
+            status='offline',
+            min_monthly_rent=2000,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.get(self.url, {'status': 'offline'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['total'], 1)
+        self.assertEqual(data['items'][0]['id'], offline_apt.id)
+
+    def test_list_filter_by_status_change_reviewing(self):
+        """按 status=change_reviewing 筛选变更审核中房源"""
+        change_apt = Apartment.objects.create(
+            landlord=self.landlord,
+            name='变更审核中公寓',
+            cover_image='https://example.com/change.jpg',
+            description='变更审核中',
+            district=self.district,
+            street=self.street,
+            detail_address='测试路5号',
+            contact_phone='13800138000',
+            status='change_reviewing',
+            min_monthly_rent=2200,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.get(self.url, {'status': 'change_reviewing'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()['data']
+        self.assertEqual(data['total'], 1)
+        self.assertEqual(data['items'][0]['id'], change_apt.id)
 
     def test_list_unauthorized(self):
         """未登录返回 401"""

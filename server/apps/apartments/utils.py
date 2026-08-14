@@ -6,6 +6,10 @@ from django.db.models import Min
 from apps.apartments.models import Apartment
 
 
+# 对外可见的房源状态（影子发布：变更审核中的房源继续展示旧版）
+PUBLIC_VISIBLE_STATUSES = ('published', 'change_reviewing')
+
+
 def backfill_apartment_min_rent(apartment: Apartment) -> bool:
     """
     根据该房源下所有未删除房型的租金方案，计算并回填 min_monthly_rent。

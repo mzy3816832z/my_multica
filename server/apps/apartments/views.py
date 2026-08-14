@@ -32,7 +32,11 @@ from apps.apartments.serializers import (
     get_dict_label,
 )
 from apps.apartments.map_service import geocode, search_nearby_pois, build_static_map_url
-from apps.apartments.utils import backfill_apartment_min_rent, backfill_apartment_min_area
+from apps.apartments.utils import (
+    backfill_apartment_min_rent,
+    backfill_apartment_min_area,
+    PUBLIC_VISIBLE_STATUSES,
+)
 from apps.audits.models import AuditRecord
 from apps.metro.models import MetroStation
 from core.exceptions import BusinessException, NotFoundException, GoneException
@@ -111,7 +115,7 @@ SORT_OPTIONS = {
         200: ApartmentListItemSerializer(many=True),
     },
     summary='公共房源列表',
-    description='仅展示已上架（published）房源，支持组合筛选、排序与分页。筛选条件可叠加，默认按审核通过时间（updated_at）倒序。',
+    description='仅展示已上架（published）或变更审核中（change_reviewing，影子发布展示旧版）房源，支持组合筛选、排序与分页。筛选条件可叠加，默认按审核通过时间（updated_at）倒序。',
     tags=['公共房源'],
     parameters=[
         {'name': 'keyword', 'in': 'query', 'schema': {'type': 'string'}, 'description': '公寓名称关键词'},
@@ -136,7 +140,7 @@ def apartment_list(request):
     """
     sort = request.query_params.get('sort', 'latest')
     ordering = SORT_OPTIONS.get(sort, SORT_OPTIONS['latest'])
-    queryset = Apartment.objects.filter(status='published').order_by(*ordering)
+    queryset = Apartment.objects.filter(status__in=PUBLIC_VISIBLE_STATUSES).order_by(*ordering)
 
     # 关键词搜索（公寓名称 + 详细地址 + 描述），带相关性排序
     keyword = request.query_params.get('keyword')
@@ -292,7 +296,7 @@ def apartment_detail(request, id):
         raise NotFoundException('房源不存在或未上架')
 
     # 若房源已下架或已删除，返回 410 提示用户
-    if apartment.status != 'published' or apartment.deleted_at is not None:
+    if apartment.status not in PUBLIC_VISIBLE_STATUSES or apartment.deleted_at is not None:
         raise GoneException('房源已下架，您可以在收藏列表中取消收藏')
 
     # 自动回填 min_monthly_rent / min_area（防御性修复历史脏数据）
@@ -328,7 +332,7 @@ def apartment_room_types(request, id):
     房源下所有房型
     """
     try:
-        apartment = Apartment.objects.get(id=id, status='published')
+        apartment = Apartment.objects.get(id=id, status__in=PUBLIC_VISIBLE_STATUSES)
     except Apartment.DoesNotExist:
         raise NotFoundException('房源不存在或未上架')
 
@@ -365,7 +369,7 @@ def room_type_detail(request, id):
         raise NotFoundException('户型不存在')
 
     # 校验所属公寓是否已上架
-    if room_type.apartment.status != 'published':
+    if room_type.apartment.status not in PUBLIC_VISIBLE_STATUSES:
         raise NotFoundException('房源不存在或未上架')
 
     # 预加载租金方案
@@ -461,7 +465,7 @@ def apartment_compare(request):
     if len(ids) > 3:
         raise BusinessException('最多对比3套', code=ErrorCode.PARAM_ERROR)
 
-    apartments = Apartment.objects.filter(id__in=ids, status='published')
+    apartments = Apartment.objects.filter(id__in=ids, status__in=PUBLIC_VISIBLE_STATUSES)
     apt_map = {a.id: a for a in apartments}
     ordered = [apt_map[i] for i in ids if i in apt_map]
 
@@ -530,7 +534,7 @@ def apartment_nearby(request, id):
     房源周边 POI + 静态地图
     """
     try:
-        apartment = Apartment.objects.get(id=id, status='published')
+        apartment = Apartment.objects.get(id=id, status__in=PUBLIC_VISIBLE_STATUSES)
     except Apartment.DoesNotExist:
         raise NotFoundException('房源不存在或未上架')
 
@@ -762,7 +766,7 @@ def _build_apartment_snapshot(apartment):
 def merchant_apartment_list(request):
     """
     GET /api/v1/merchant/apartments
-    商家已上架房源列表
+    商家房源列表（支持 status 筛选，默认返回已上架）
     （由 merchant_urls.py 中的外层视图统一添加 @api_view 和 @permission_classes）
     """
     from datetime import timedelta
@@ -770,9 +774,16 @@ def merchant_apartment_list(request):
 
     landlord = request.user
     thirty_days_ago = timezone.localdate() - timedelta(days=30)
+
+    status_param = request.query_params.get('status')
+    if status_param:
+        statuses = [s.strip() for s in status_param.split(',') if s.strip()]
+    else:
+        statuses = ['published']
+
     queryset = Apartment.objects.filter(
         landlord=landlord,
-        status='published',
+        status__in=statuses,
     ).annotate(
         favorites_count=Count('favorited_by', distinct=True),
         views_30d=Count(
