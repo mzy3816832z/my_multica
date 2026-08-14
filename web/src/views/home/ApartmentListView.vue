@@ -105,8 +105,6 @@ const sortOptions = [
   { text: '最新上架', value: 'latest' },
   { text: '价格从低到高', value: 'price_asc' },
   { text: '价格从高到低', value: 'price_desc' },
-  { text: '面积从大到小', value: 'area_desc' },
-  { text: '面积从小到大', value: 'area_asc' },
 ]
 
 
