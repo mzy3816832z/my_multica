@@ -176,12 +176,6 @@ class RoomType(BaseModel):
         blank=True,
         verbose_name='面积（㎡）',
     )
-    orientation = models.CharField(
-        max_length=30,
-        null=True,
-        blank=True,
-        verbose_name='朝向编码',
-    )
     available_date = models.DateField(
         null=True,
         blank=True,

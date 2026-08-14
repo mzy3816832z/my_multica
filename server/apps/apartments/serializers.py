@@ -54,11 +54,6 @@ VALID_FACILITIES = {
     'private_bathroom', 'balcony', 'kitchen', 'wifi',
     'tv', 'sofa', 'bed', 'desk', 'elevator', 'parking', 'gym',
 }
-VALID_ORIENTATIONS = {
-    'east', 'south', 'west', 'north',
-    'south_east', 'south_west', 'north_east', 'north_west',
-    'north_south',
-}
 VALID_FEE_TYPES = {'civilian', 'commercial', 'metered'}
 
 
@@ -102,10 +97,6 @@ class RoomTypeSerializer(serializers.Serializer):
         required=False, allow_null=True,
         help_text='面积（㎡），范围 0.5-500',
     )
-    orientation = serializers.CharField(
-        max_length=30, required=False, allow_null=True, allow_blank=True,
-        help_text='朝向编码',
-    )
     available_date = serializers.DateField(
         required=False, allow_null=True,
         help_text='可入住日期',
@@ -116,11 +107,6 @@ class RoomTypeSerializer(serializers.Serializer):
         if value is not None:
             if value < 0.5 or value > 500:
                 raise serializers.ValidationError('面积范围 0.5-500 ㎡')
-        return value
-
-    def validate_orientation(self, value):
-        if value and value not in VALID_ORIENTATIONS:
-            raise serializers.ValidationError(f'无效的朝向: {value}')
         return value
 
     def validate_images(self, value):
@@ -488,13 +474,8 @@ class RoomTypeListSerializer(serializers.Serializer):
     floor = serializers.IntegerField(help_text='楼层')
     sort = serializers.IntegerField(help_text='展示排序')
     area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='面积（㎡）', allow_null=True)
-    orientation = serializers.CharField(max_length=30, help_text='朝向编码', allow_null=True)
-    orientation_label = serializers.SerializerMethodField(help_text='朝向展示标签')
     available_date = serializers.DateField(help_text='可入住日期', allow_null=True)
     min_monthly_rent = serializers.SerializerMethodField(help_text='该房型最低月租金')
-
-    def get_orientation_label(self, obj):
-        return get_dict_label('orientation', obj.orientation)
 
     def get_layout_type_label(self, obj):
         return get_dict_label('layout_type', obj.layout_type)
@@ -530,14 +511,9 @@ class RoomTypeDetailSerializer(serializers.Serializer):
     floor = serializers.IntegerField(help_text='楼层')
     sort = serializers.IntegerField(help_text='展示排序')
     area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='面积（㎡）', allow_null=True)
-    orientation = serializers.CharField(max_length=30, help_text='朝向编码', allow_null=True)
-    orientation_label = serializers.SerializerMethodField(help_text='朝向展示标签')
     available_date = serializers.DateField(help_text='可入住日期', allow_null=True)
     rental_plans = RentalPlanListSerializer(many=True, help_text='租期租金方案列表')
     apartment = serializers.SerializerMethodField(help_text='所属公寓简要信息')
-
-    def get_orientation_label(self, obj):
-        return get_dict_label('orientation', obj.orientation)
 
     def get_layout_type_label(self, obj):
         return get_dict_label('layout_type', obj.layout_type)

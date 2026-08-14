@@ -1563,9 +1563,7 @@ class ApartmentCompareTests(TestCase):
         self.district = District.objects.create(name='浦东新区', level=1, code='310115', sort=0)
         self.street = District.objects.create(name='陆家嘴街道', level=2, code='310115001', parent=self.district, sort=0)
 
-        # 字典：朝向/设施/费用类型（get_or_create 避免与种子数据冲突）
-        SystemDict.objects.get_or_create(category='window_orientation', code='south', defaults={'label': '南', 'sort': 1})
-        SystemDict.objects.get_or_create(category='window_orientation', code='south_east', defaults={'label': '东南', 'sort': 2})
+        # 字典：设施/费用类型（get_or_create 避免与种子数据冲突）
         SystemDict.objects.get_or_create(category='facility', code='air_conditioner', defaults={'label': '空调', 'sort': 1})
         SystemDict.objects.get_or_create(category='facility', code='wifi', defaults={'label': 'WiFi', 'sort': 2})
         SystemDict.objects.get_or_create(category='fee_type', code='civilian', defaults={'label': '民水民电', 'sort': 1})
@@ -1599,7 +1597,6 @@ class ApartmentCompareTests(TestCase):
             window_type='outer',
             floor=5,
             sort=0,
-            orientation='south',
         )
         RentalPlan.objects.create(room_type=room_a, lease_term='1_month', monthly_rent=3000, payment_method='pay_1_deposit_1')
 
@@ -1630,7 +1627,6 @@ class ApartmentCompareTests(TestCase):
             window_type='outer',
             floor=8,
             sort=0,
-            orientation='south_east',
         )
         RentalPlan.objects.create(room_type=room_b, lease_term='1_year', monthly_rent=5000, payment_method='pay_3_deposit_1')
 
@@ -1647,13 +1643,11 @@ class ApartmentCompareTests(TestCase):
         self.assertEqual(a['name'], '公寓A')
         self.assertEqual(a['min_monthly_rent'], 3000)
         self.assertEqual(a['min_area'], 25.0)
-        self.assertEqual(a['orientations'], ['南'])
         self.assertEqual(a['fees']['property_fee'], 200)
         self.assertEqual(a['fees']['water_fee_label'], '民用')
         self.assertEqual(a['facilities'], ['WiFi', '空调'])
 
         b = data[1]
-        self.assertEqual(b['orientations'], ['东南'])
         self.assertIsNone(b['fees']['water_fee_label'])
 
     def test_compare_skips_unpublished(self):

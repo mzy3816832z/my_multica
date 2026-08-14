@@ -22,7 +22,6 @@ export interface CreateApartmentPayload {
     window_type: string
     floor: number
     area?: number
-    orientation?: string
     available_date?: string
     rental_plans: {
       lease_term: string
@@ -70,7 +69,6 @@ export interface UpdateApartmentPayload {
     window_type?: string
     floor?: number
     area?: number
-    orientation?: string
     available_date?: string
     rental_plans?: {
       lease_term?: string

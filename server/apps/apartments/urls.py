@@ -7,7 +7,6 @@ from apps.apartments import views
 urlpatterns = [
     # 公共房源接口（公开访问）
     path('', views.apartment_list, name='apartment-list'),
-    path('hot-districts/', views.hot_districts, name='hot-districts'),
     path('geocode/', views.apartment_geocode, name='apartment-geocode'),
     path('map-config/', views.apartment_map_config, name='apartment-map-config'),
     path('compare/', views.apartment_compare, name='apartment-compare'),

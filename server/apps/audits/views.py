@@ -417,7 +417,6 @@ def _apply_submitted_data(apartment, submitted_data):
                 floor=rt_data['floor'],
                 sort=rt_data.get('sort', 0),
                 area=rt_data.get('area'),
-                orientation=rt_data.get('orientation') or None,
                 available_date=date.fromisoformat(rt_data['available_date']) if rt_data.get('available_date') else None,
             )
             room_area = rt_data.get('area')

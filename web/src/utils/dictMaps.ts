@@ -17,17 +17,6 @@ export const windowTypeMap: Record<string, string> = {
   outer: '外窗',
 }
 
-export const orientationMap: Record<string, string> = {
-  east: '东',
-  south: '南',
-  west: '西',
-  north: '北',
-  southeast: '东南',
-  southwest: '西南',
-  northeast: '东北',
-  northwest: '西北',
-}
-
 export const facilityMap: Record<string, string> = {
   air_conditioner: '空调',
   washing_machine: '洗衣机',

@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    DateSelect: typeof import('./components/DateSelect.vue')['default']
     DictSelect: typeof import('./components/DictSelect.vue')['default']
     DistrictCascader: typeof import('./components/DistrictCascader.vue')['default']
     FacilityGroup: typeof import('./components/business/FacilityGroup.vue')['default']
@@ -23,6 +24,7 @@ declare module 'vue' {
     VanActionSheet: typeof import('vant/es')['ActionSheet']
     VanBadge: typeof import('vant/es')['Badge']
     VanButton: typeof import('vant/es')['Button']
+    VanCalendar: typeof import('vant/es')['Calendar']
     VanCell: typeof import('vant/es')['Cell']
     VanCellGroup: typeof import('vant/es')['CellGroup']
     VanCheckbox: typeof import('vant/es')['Checkbox']

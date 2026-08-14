@@ -2,10 +2,10 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { getApartments, getHotDistricts, getMetroLines } from '@/api/apartment'
+import { getApartments, getMetroLines } from '@/api/apartment'
 import { getDistricts } from '@/api/dict'
 import { addFavorite, removeFavorite } from '@/api/favorite'
-import type { Apartment, District, DictItem, HotDistrict, MetroLine, MetroStation } from '@/types'
+import type { Apartment, District, DictItem, MetroLine, MetroStation } from '@/types'
 import MapView from './MapView.vue'
 
 const router = useRouter()
@@ -69,22 +69,6 @@ function clearSearchHistory() {
 function onHistoryClick(kw: string) {
   keyword.value = kw
   onSearch()
-}
-
-// 热门区域
-const hotDistricts = ref<HotDistrict[]>([])
-const hotDistrictsLoading = ref(false)
-
-async function fetchHotDistricts() {
-  hotDistrictsLoading.value = true
-  try {
-    const data = await getHotDistricts()
-    hotDistricts.value = data
-  } catch {
-    hotDistricts.value = []
-  } finally {
-    hotDistrictsLoading.value = false
-  }
 }
 
 // ================= 筛选 =================
@@ -430,7 +414,6 @@ function startCompare() {
 onMounted(() => {
   loadDistricts()
   loadMetroLines()
-  fetchHotDistricts()
   fetchList(true)
 })
 </script>
@@ -442,7 +425,7 @@ onMounted(() => {
       <div class="flex items-center px-3 py-2 gap-2">
         <div
           class="flex-1 flex items-center bg-gray-100 rounded-full px-3 py-2"
-          @click="showSearch = true; fetchHotDistricts()"
+          @click="showSearch = true"
         >
           <van-icon name="search" class="text-gray-400 mr-2" />
           <span class="text-sm text-gray-400 flex-1">
@@ -507,18 +490,6 @@ onMounted(() => {
           <van-empty description="暂无房源" />
           <div v-if="keyword || activeFilterCount > 0" class="px-4 text-center">
             <p class="text-sm text-gray-400 mb-3">试试搜索行政区或街道名</p>
-            <div class="flex items-center gap-2 justify-center">
-              <van-tag
-                v-for="d in hotDistricts"
-                :key="d.district_id"
-                type="primary"
-                size="large"
-                round
-                @click="keyword = d.name; showSearch = false; onRefresh()"
-              >
-                {{ d.name }}
-              </van-tag>
-            </div>
           </div>
         </div>
 
@@ -646,25 +617,6 @@ onMounted(() => {
               @click.stop="removeSearchHistory(index)"
             />
           </div>
-        </div>
-      </div>
-
-      <!-- 热门区域 -->
-      <div class="px-4 pt-4">
-        <div class="text-sm font-bold text-gray-900 mb-3">热门区域</div>
-        <van-loading v-if="hotDistrictsLoading" size="20" class="py-2" />
-        <div v-else-if="hotDistricts.length === 0" class="text-sm text-gray-400 py-2">暂无热门区域</div>
-        <div v-else class="flex flex-wrap gap-2">
-          <van-tag
-            v-for="d in hotDistricts"
-            :key="d.district_id"
-            type="primary"
-            size="large"
-            round
-            @click="keyword = d.name; onSearch()"
-          >
-            {{ d.name }}
-          </van-tag>
         </div>
       </div>
     </van-popup>

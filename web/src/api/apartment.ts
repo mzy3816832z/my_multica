@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PaginatedData, Apartment, RoomType, HotDistrict, NearbyData, GeocodeResult, MapConfig, MetroLine, ApartmentCompareItem } from '@/types'
+import type { PaginatedData, Apartment, RoomType, NearbyData, GeocodeResult, MapConfig, MetroLine, ApartmentCompareItem } from '@/types'
 
 export interface ApartmentListParams {
   keyword?: string
@@ -29,10 +29,6 @@ export function getRoomTypesByApartment(id: number): Promise<RoomType[]> {
 
 export function getRoomTypeDetail(id: number): Promise<RoomType> {
   return request.get(`/apartments/room-types/${id}/`)
-}
-
-export function getHotDistricts(): Promise<HotDistrict[]> {
-  return request.get('/apartments/hot-districts/')
 }
 
 export function geocodeAddress(address: string): Promise<GeocodeResult> {

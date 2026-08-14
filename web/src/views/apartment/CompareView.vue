@@ -37,10 +37,6 @@ function formatArea(item: ApartmentCompareItem): string {
   return item.min_area != null ? `${item.min_area}㎡` : '暂无'
 }
 
-function formatOrientation(item: ApartmentCompareItem): string {
-  return item.orientations.length > 0 ? item.orientations.join('、') : '暂无'
-}
-
 function formatPropertyFee(item: ApartmentCompareItem): string {
   const v = item.fees.property_fee
   if (v == null) return '暂无'
@@ -79,7 +75,6 @@ interface CompareField {
 const fields: CompareField[] = [
   { key: 'price', label: '价格', format: formatPrice, raw: (i) => (i.min_monthly_rent != null ? String(i.min_monthly_rent) : '') },
   { key: 'area', label: '面积', format: formatArea, raw: (i) => (i.min_area != null ? String(i.min_area) : '') },
-  { key: 'orientation', label: '朝向', format: formatOrientation, raw: (i) => [...i.orientations].sort().join(',') },
   { key: 'property_fee', label: '物业费', format: formatPropertyFee, raw: (i) => (i.fees.property_fee != null ? String(i.fees.property_fee) : '') },
   { key: 'water_electric', label: '水电', format: formatWaterElectric, raw: (i) => [i.fees.water_fee_label, i.fees.electric_fee_label].filter(Boolean).sort().join('/') },
   { key: 'service_fee', label: '服务费', format: formatServiceFee, raw: (i) => (i.fees.service_fee != null ? String(i.fees.service_fee) : '') },

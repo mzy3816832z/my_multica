@@ -270,72 +270,6 @@ def apartment_list(request):
 @extend_schema(
     request=None,
     responses={
-        200: {
-            'type': 'object',
-            'properties': {
-                'code': {'type': 'integer'},
-                'message': {'type': 'string'},
-                'data': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'district_id': {'type': 'integer'},
-                            'name': {'type': 'string'},
-                            'count': {'type': 'integer'},
-                        },
-                    },
-                },
-            },
-        },
-    },
-    summary='热门区域',
-    description='返回已上架房源数 Top5 的行政区，用于搜索快捷词。',
-    tags=['公共房源'],
-)
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def hot_districts(request):
-    """
-    GET /api/v1/apartments/hot-districts
-    返回房源数 Top5 行政区
-    """
-    from django.db.models import Count
-    from apps.districts.models import District
-
-    districts = (
-        Apartment.objects
-        .filter(status='published')
-        .values('district_id')
-        .annotate(count=Count('id'))
-        .order_by('-count')[:5]
-    )
-
-    district_ids = [d['district_id'] for d in districts]
-    count_map = {d['district_id']: d['count'] for d in districts}
-
-    district_objs = District.objects.filter(
-        id__in=district_ids,
-        level=1,
-    ).values('id', 'name')
-
-    name_map = {d['id']: d['name'] for d in district_objs}
-
-    result = [
-        {
-            'district_id': d_id,
-            'name': name_map.get(d_id, ''),
-            'count': count_map[d_id],
-        }
-        for d_id in district_ids
-    ]
-
-    return unified_response(data=result)
-
-
-@extend_schema(
-    request=None,
-    responses={
         200: ApartmentDetailSerializer,
         404: UnifiedErrorResponseSerializer,
         410: UnifiedErrorResponseSerializer,
@@ -444,16 +378,11 @@ def room_type_detail(request, id):
 
 def _build_compare_item(apartment):
     """
-    构建单套公寓的简化对比数据，包含价格/面积/朝向/费用明细/设施列表。
-    设施与朝向标签从系统字典解析（缺失时回退到原始编码）。
+    构建单套公寓的简化对比数据，包含价格/面积/费用明细/设施列表。
+    设施标签从系统字典解析（缺失时回退到原始编码）。
     """
-    orientations = []
     facility_codes = set()
-    seen_orientations = set()
     for rt in apartment.room_types.all().order_by('sort', 'id'):
-        if rt.orientation and rt.orientation not in seen_orientations:
-            seen_orientations.add(rt.orientation)
-            orientations.append(get_dict_label('window_orientation', rt.orientation))
         for code in (rt.facilities or []):
             facility_codes.add(code)
 
@@ -467,7 +396,6 @@ def _build_compare_item(apartment):
         'cover_image': apartment.cover_image,
         'min_monthly_rent': apartment.min_monthly_rent,
         'min_area': float(apartment.min_area) if apartment.min_area is not None else None,
-        'orientations': orientations,
         'fees': {
             'property_fee': apartment.property_fee,
             'water_fee_label': get_dict_label('fee_type', apartment.water_fee),
@@ -497,7 +425,6 @@ def _build_compare_item(apartment):
                             'cover_image': {'type': 'string'},
                             'min_monthly_rent': {'type': 'integer', 'nullable': True},
                             'min_area': {'type': 'number', 'nullable': True},
-                            'orientations': {'type': 'array', 'items': {'type': 'string'}},
                             'fees': {'type': 'object'},
                             'facilities': {'type': 'array', 'items': {'type': 'string'}},
                         },
@@ -704,7 +631,6 @@ def create_apartment(request):
                 floor=rt_data['floor'],
                 sort=rt_data.get('sort', 0),
                 area=rt_data.get('area'),
-                orientation=rt_data.get('orientation') or None,
                 available_date=rt_data.get('available_date'),
             )
 
@@ -808,7 +734,6 @@ def _build_apartment_snapshot(apartment):
             'floor': rt.floor,
             'sort': rt.sort,
             'area': float(rt.area) if rt.area is not None else None,
-            'orientation': rt.orientation,
             'available_date': rt.available_date.isoformat() if rt.available_date else None,
             'rental_plans': plans,
         })
@@ -1040,7 +965,6 @@ def merchant_apartment_update(request, id):
                         floor=rt_data['floor'],
                         sort=rt_data.get('sort', 0),
                         area=rt_data.get('area'),
-                        orientation=rt_data.get('orientation') or None,
                         available_date=rt_data.get('available_date'),
                     )
                     room_area = rt_data.get('area')
@@ -1141,7 +1065,6 @@ def _build_room_types_from_data(room_types_data):
             'floor': rt_data['floor'],
             'sort': rt_data.get('sort', 0),
             'area': float(rt_data['area']) if rt_data.get('area') is not None else None,
-            'orientation': rt_data.get('orientation') or None,
             'available_date': rt_data['available_date'].isoformat() if rt_data.get('available_date') else None,
             'rental_plans': plans,
         })

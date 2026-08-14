@@ -93,7 +93,6 @@ async function loadApartmentDetail() {
       window_type: r.window_type,
       floor: r.floor,
       area: (r as any).area !== undefined && (r as any).area !== null ? Number((r as any).area) : undefined,
-      orientation: (r as any).orientation || '',
       available_date: (r as any).available_date || '',
       rental_plans: (r.rental_plans || []).map((p: RentalPlan) => ({
         lease_term: p.lease_term,
@@ -449,21 +448,10 @@ onMounted(() => {
             <div v-if="roomFormErrors.area" class="text-danger text-xs mt-1">{{ roomFormErrors.area }}</div>
           </div>
 
-          <!-- 朝向 -->
-          <div>
-            <div class="text-sm font-bold text-gray-900 mb-2">朝向 <span class="text-danger">*</span></div>
-            <DictSelect category="orientation" v-model="roomForm.orientation" placeholder="请选择朝向" title="选择朝向" />
-            <div v-if="roomFormErrors.orientation" class="text-danger text-xs mt-1">{{ roomFormErrors.orientation }}</div>
-          </div>
-
           <!-- 可入住时间 -->
           <div>
             <div class="text-sm font-bold text-gray-900 mb-2">可入住时间</div>
-            <input
-              type="date"
-              v-model="roomForm.available_date"
-              class="w-full bg-gray-50 rounded-lg px-3 py-2.5 text-sm border-0 outline-none text-gray-900"
-            />
+            <DateSelect v-model="roomForm.available_date" placeholder="请选择日期（默认随时入住）" />
           </div>
 
           <!-- 设施 -->

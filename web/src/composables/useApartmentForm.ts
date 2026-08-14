@@ -10,7 +10,6 @@ export interface RoomTypeFormItem {
   window_type: string
   floor: number | undefined
   area: number | undefined
-  orientation: string
   available_date: string
   rental_plans: RentalPlanFormItem[]
 }
@@ -185,7 +184,6 @@ export function useApartmentForm() {
     window_type: '',
     floor: undefined,
     area: undefined,
-    orientation: '',
     available_date: '',
     rental_plans: [],
   })
@@ -196,7 +194,6 @@ export function useApartmentForm() {
   watch(() => roomForm.window_type, () => { delete roomFormErrors.window_type })
   watch(() => roomForm.floor, () => { delete roomFormErrors.floor })
   watch(() => roomForm.area, () => { delete roomFormErrors.area })
-  watch(() => roomForm.orientation, () => { delete roomFormErrors.orientation })
   watch(() => roomForm.rental_plans.length, () => { if (roomForm.rental_plans.length > 0) delete roomFormErrors.rental_plans })
 
   const roomImageUploader = ref<HTMLInputElement | null>(null)
@@ -229,7 +226,6 @@ export function useApartmentForm() {
       window_type: room.window_type,
       floor: room.floor,
       area: room.area,
-      orientation: room.orientation || '',
       available_date: room.available_date || '',
       rental_plans: room.rental_plans.map(p => ({ ...p })),
     })
@@ -245,7 +241,6 @@ export function useApartmentForm() {
     roomForm.window_type = ''
     roomForm.floor = undefined
     roomForm.area = undefined
-    roomForm.orientation = ''
     roomForm.available_date = ''
     roomForm.rental_plans = []
     pendingRoomImages.value = []
@@ -417,10 +412,6 @@ export function useApartmentForm() {
       roomFormErrors.area = '面积范围 0.5-500 ㎡'
       hasError = true
     }
-    if (!roomForm.orientation) {
-      roomFormErrors.orientation = '请选择朝向'
-      hasError = true
-    }
     if (roomForm.rental_plans.length === 0) {
       roomFormErrors.rental_plans = '请至少添加 1 组租金方案'
       hasError = true
@@ -457,7 +448,6 @@ export function useApartmentForm() {
       window_type: roomForm.window_type,
       floor: Number(roomForm.floor),
       area: roomForm.area !== undefined && roomForm.area !== null ? Number(roomForm.area) : undefined,
-      orientation: roomForm.orientation,
       available_date: roomForm.available_date || '',
       rental_plans: roomForm.rental_plans.map(p => ({
         lease_term: p.lease_term,
@@ -576,7 +566,6 @@ export function useApartmentForm() {
         window_type: r.window_type,
         floor: r.floor as number,
         area: r.area !== undefined && r.area !== null ? Number(r.area) : undefined,
-        orientation: r.orientation || undefined,
         available_date: r.available_date || undefined,
         rental_plans: r.rental_plans.map(p => ({
           lease_term: p.lease_term,

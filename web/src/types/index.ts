@@ -118,8 +118,6 @@ export interface RoomType {
   floor: number
   sort: number
   area?: number | null
-  orientation?: string | null
-  orientation_label?: string | null
   available_date?: string | null
   rental_plans?: RentalPlan[]
   min_monthly_rent?: number
@@ -202,13 +200,6 @@ export interface BrowseHistoryItem {
   timestamp: number
 }
 
-// 热门区域
-export interface HotDistrict {
-  district_id: number
-  name: string
-  count: number
-}
-
 // POI 周边设施
 export interface NearbyPOI {
   name: string
@@ -250,7 +241,6 @@ export interface ApartmentCompareItem {
   cover_image: string
   min_monthly_rent: number | null
   min_area: number | null
-  orientations: string[]
   fees: ApartmentCompareFees
   facilities: string[]
 }
