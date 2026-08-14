@@ -11,8 +11,8 @@ class Apartment(BaseModel):
         ('pending_first_review', '待首次审核'),
         ('first_rejected', '首次审核驳回'),
         ('published', '已上架'),
-        ('change_reviewing', '变更审核中'),
         ('offline', '已下架'),
+        ('change_reviewing', '变更审核中'),
     ]
 
     landlord = models.ForeignKey(

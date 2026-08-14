@@ -42,7 +42,7 @@ export function createApartment(payload: CreateApartmentPayload): Promise<Create
   return request.post('/merchant/apartments/', payload)
 }
 
-export function getMerchantApartments(params?: { page?: number; page_size?: number }): Promise<PaginatedData<Apartment>> {
+export function getMerchantApartments(params?: { page?: number; page_size?: number; status?: string }): Promise<PaginatedData<Apartment>> {
   return request.get('/merchant/apartments/', { params })
 }
 
@@ -94,6 +94,23 @@ export function updateApartment(id: number, payload: UpdateApartmentPayload): Pr
 
 export function deleteApartment(id: number): Promise<void> {
   return request.delete(`/merchant/apartments/${id}/`)
+}
+
+export interface ApartmentStatusResult {
+  apartment_id: number
+  status: string
+}
+
+export function offlineApartment(id: number): Promise<ApartmentStatusResult> {
+  return request.post(`/merchant/apartments/${id}/offline/`)
+}
+
+export function onlineApartment(id: number): Promise<ApartmentStatusResult> {
+  return request.post(`/merchant/apartments/${id}/online/`)
+}
+
+export function withdrawApartment(id: number): Promise<ApartmentStatusResult> {
+  return request.post(`/merchant/apartments/${id}/withdraw/`)
 }
 
 export function getMerchantAudits(params?: { page?: number; page_size?: number }): Promise<PaginatedData<MerchantAuditItem>> {

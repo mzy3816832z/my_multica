@@ -6,7 +6,7 @@ from django.db.models import Min
 from apps.apartments.models import Apartment
 
 
-# 对外可见的房源状态（影子发布：变更审核中的房源继续展示旧版）
+# 公共端可见房源状态：已上架 或 变更审核中（变更审核期间原房源仍对外可见）
 PUBLIC_VISIBLE_STATUSES = ('published', 'change_reviewing')
 
 

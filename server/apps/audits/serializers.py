@@ -11,6 +11,7 @@ class AuditListItemSerializer(serializers.Serializer):
     apartment_id = serializers.IntegerField(help_text='关联房源 ID')
     apartment_name = serializers.SerializerMethodField(help_text='公寓名称')
     cover_image = serializers.SerializerMethodField(help_text='公寓封面图 URL')
+    apartment_status = serializers.SerializerMethodField(help_text='关联房源状态（draft/pending_first_review/first_rejected/published/change_reviewing/offline）')
     type = serializers.CharField(max_length=30, help_text='审核类型')
     type_display = serializers.SerializerMethodField(help_text='审核类型展示')
     status = serializers.CharField(max_length=30, help_text='审核状态')
@@ -24,6 +25,9 @@ class AuditListItemSerializer(serializers.Serializer):
 
     def get_cover_image(self, obj):
         return obj.apartment.cover_image if obj.apartment else None
+
+    def get_apartment_status(self, obj):
+        return obj.apartment.status if obj.apartment else None
 
     def get_type_display(self, obj):
         return obj.get_type_display()
@@ -73,6 +77,7 @@ class AuditDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text='审核单 ID')
     apartment_id = serializers.IntegerField(help_text='关联房源 ID')
     apartment_name = serializers.SerializerMethodField(help_text='公寓名称')
+    apartment_status = serializers.SerializerMethodField(help_text='关联房源状态（draft/pending_first_review/first_rejected/published/change_reviewing/offline）')
     type = serializers.CharField(max_length=30, help_text='审核类型')
     type_display = serializers.SerializerMethodField(help_text='审核类型展示')
     status = serializers.CharField(max_length=30, help_text='审核状态')
@@ -87,6 +92,9 @@ class AuditDetailSerializer(serializers.Serializer):
 
     def get_apartment_name(self, obj):
         return obj.apartment.name if obj.apartment else None
+
+    def get_apartment_status(self, obj):
+        return obj.apartment.status if obj.apartment else None
 
     def get_type_display(self, obj):
         return obj.get_type_display()

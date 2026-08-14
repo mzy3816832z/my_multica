@@ -2,7 +2,7 @@
 import { formatDateTime } from '@/utils/datetime'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getMerchantApartments, getMerchantAudits, getMerchantStats, deleteApartment } from '@/api/merchant'
+import { getMerchantApartments, getMerchantAudits, getMerchantStats, deleteApartment, offlineApartment, onlineApartment, withdrawApartment } from '@/api/merchant'
 import { useUiStore } from '@/stores/ui'
 import type { Apartment, MerchantAuditItem, MerchantStats } from '@/types'
 
@@ -28,6 +28,13 @@ const auditLoading = ref(false)
 const auditFinished = ref(false)
 const auditRefreshing = ref(false)
 const auditPage = ref(1)
+
+// 已下架
+const offlineList = ref<Apartment[]>([])
+const offlineLoading = ref(false)
+const offlineFinished = ref(false)
+const offlineRefreshing = ref(false)
+const offlinePage = ref(1)
 
 // 加载商家数据统计
 async function loadStats() {
@@ -95,6 +102,34 @@ async function loadAuditList(isRefresh = false) {
   }
 }
 
+// 加载已下架房源
+async function loadOfflineList(isRefresh = false) {
+  if (isRefresh) {
+    offlinePage.value = 1
+    offlineFinished.value = false
+  }
+  if (offlineFinished.value) return
+
+  offlineLoading.value = true
+  try {
+    const data = await getMerchantApartments({ page: offlinePage.value, page_size: PAGE_SIZE, status: 'offline' })
+    if (isRefresh) {
+      offlineList.value = data.items
+    } else {
+      offlineList.value.push(...data.items)
+    }
+    offlinePage.value++
+    if (offlineList.value.length >= data.total) {
+      offlineFinished.value = true
+    }
+  } catch {
+    // 错误已在 request 拦截器中 toast
+  } finally {
+    offlineLoading.value = false
+    offlineRefreshing.value = false
+  }
+}
+
 // 下拉刷新
 function onPublishedRefresh() {
   loadPublishedList(true)
@@ -104,6 +139,10 @@ function onAuditRefresh() {
   loadAuditList(true)
 }
 
+function onOfflineRefresh() {
+  loadOfflineList(true)
+}
+
 // 加载更多
 function onPublishedLoad() {
   loadPublishedList()
@@ -111,6 +150,10 @@ function onPublishedLoad() {
 
 function onAuditLoad() {
   loadAuditList()
+}
+
+function onOfflineLoad() {
+  loadOfflineList()
 }
 
 // 编辑
@@ -131,6 +174,79 @@ async function onDelete(id: number) {
     // 刷新列表
     loadPublishedList(true)
     loadAuditList(true)
+    loadOfflineList(true)
+  } catch (err: any) {
+    if (err?.message === 'cancel') {
+      // 用户取消
+    } else {
+      // 错误已在 request 拦截器中 toast
+    }
+  } finally {
+    uiStore.hideLoading()
+  }
+}
+
+// 下架
+async function onOffline(id: number) {
+  try {
+    await showConfirmDialog({
+      title: '确认下架',
+      message: '下架后房源将不再对外展示，可随时重新上架，确定下架吗？',
+    })
+    uiStore.showLoading('下架中...')
+    await offlineApartment(id)
+    showToast('已下架')
+    loadPublishedList(true)
+    loadOfflineList(true)
+  } catch (err: any) {
+    if (err?.message === 'cancel') {
+      // 用户取消
+    } else {
+      // 错误已在 request 拦截器中 toast
+    }
+  } finally {
+    uiStore.hideLoading()
+  }
+}
+
+// 重新上架
+async function onOnline(id: number) {
+  try {
+    await showConfirmDialog({
+      title: '确认重新上架',
+      message: '重新上架后房源将对外展示，确定重新上架吗？',
+    })
+    uiStore.showLoading('重新上架中...')
+    await onlineApartment(id)
+    showToast('已重新上架')
+    loadOfflineList(true)
+    loadPublishedList(true)
+  } catch (err: any) {
+    if (err?.message === 'cancel') {
+      // 用户取消
+    } else {
+      // 错误已在 request 拦截器中 toast
+    }
+  } finally {
+    uiStore.hideLoading()
+  }
+}
+
+// 撤回（区分首次审核提交 / 变更审核）
+async function onWithdraw(id: number, type?: string) {
+  const isChange = type === 'change_review'
+  const title = isChange ? '确认撤回变更' : '确认撤回提交'
+  const message = isChange
+    ? '撤回后当前变更将取消，线上继续展示旧版房源'
+    : '撤回后房源将退回草稿，可重新编辑提交'
+  try {
+    await showConfirmDialog({ title, message })
+    uiStore.showLoading('撤回中...')
+    await withdrawApartment(id)
+    showToast('撤回成功')
+    loadAuditList(true)
+    loadPublishedList(true)
+    loadOfflineList(true)
   } catch (err: any) {
     if (err?.message === 'cancel') {
       // 用户取消
@@ -149,6 +265,8 @@ function statusText(status?: string) {
     pending_first_review: '首次审核中',
     first_rejected: '首次审核驳回',
     published: '已上架',
+    offline: '已下架',
+    change_reviewing: '变更审核中',
   }
   return map[status || ''] || status || '-'
 }
@@ -159,6 +277,8 @@ function statusType(status?: string): 'primary' | 'success' | 'warning' | 'dange
     pending_first_review: 'warning',
     first_rejected: 'danger',
     published: 'success',
+    offline: 'default',
+    change_reviewing: 'warning',
   }
   return map[status || ''] || 'default'
 }
@@ -189,6 +309,7 @@ function auditStatusType(status?: string): 'primary' | 'success' | 'warning' | '
 onMounted(() => {
   loadPublishedList(true)
   loadAuditList(true)
+  loadOfflineList(true)
   loadStats()
 })
 </script>
@@ -266,6 +387,14 @@ onMounted(() => {
                 <!-- 操作按钮 -->
                 <div class="flex border-t border-gray-100">
                   <div
+                    class="flex-1 py-2.5 text-center text-sm text-gray-600 flex items-center justify-center gap-1"
+                    @click="onOffline(item.id)"
+                  >
+                    <van-icon name="arrow-down" />
+                    <span>下架</span>
+                  </div>
+                  <div class="w-px bg-gray-100" />
+                  <div
                     class="flex-1 py-2.5 text-center text-sm text-primary flex items-center justify-center gap-1"
                     @click="goEdit(item.id)"
                   >
@@ -327,6 +456,92 @@ onMounted(() => {
                       </van-tag>
                       <span class="text-xs text-gray-400">{{ formatDateTime(item.created_at) }}</span>
                     </div>
+                  </div>
+                </div>
+
+                <!-- 撤回操作（仅审核中单据） -->
+                <div v-if="item.status === 'pending'" class="flex border-t border-gray-100">
+                  <div
+                    class="flex-1 py-2.5 text-center text-sm text-gray-600 flex items-center justify-center gap-1"
+                    @click="onWithdraw(item.apartment_id, item.type)"
+                  >
+                    <van-icon name="revoke" />
+                    <span>{{ item.type === 'change_review' ? '撤回变更' : '撤回提交' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </van-list>
+        </van-pull-refresh>
+      </van-tab>
+
+      <van-tab title="已下架">
+        <van-pull-refresh v-model="offlineRefreshing" @refresh="onOfflineRefresh">
+          <van-list
+            v-model:loading="offlineLoading"
+            :finished="offlineFinished"
+            finished-text="没有更多了"
+            @load="onOfflineLoad"
+          >
+            <!-- 空状态 -->
+            <van-empty v-if="offlineList.length === 0 && !offlineLoading" description="暂无已下架房源" />
+
+            <!-- 已下架房源卡片列表 -->
+            <div v-else class="apartment-card-list p-3">
+              <div
+                v-for="item in offlineList"
+                :key="item.id"
+                class="bg-white rounded-xl overflow-hidden shadow-sm"
+              >
+                <div class="flex p-3 gap-3">
+                  <van-image
+                    :src="item.cover_image"
+                    fit="cover"
+                    class="w-24 h-24 rounded-lg flex-shrink-0"
+                  />
+                  <div class="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <div class="text-sm font-bold text-gray-900 truncate">{{ item.name }}</div>
+                      <div class="text-xs text-gray-500 mt-1">
+                        {{ item.district_name }} {{ item.street_name }}
+                      </div>
+                      <div class="text-xs text-gray-400 mt-0.5">{{ item.detail_address }}</div>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                      <van-tag :type="statusType(item.status)" size="medium" round>
+                        {{ statusText(item.status) }}
+                      </van-tag>
+                      <span class="text-sm font-bold text-danger">
+                        {{ item.min_monthly_rent ? item.min_monthly_rent + ' 元/月起' : '-' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="flex border-t border-gray-100">
+                  <div
+                    class="flex-1 py-2.5 text-center text-sm text-success flex items-center justify-center gap-1"
+                    @click="onOnline(item.id)"
+                  >
+                    <van-icon name="arrow-up" />
+                    <span>重新上架</span>
+                  </div>
+                  <div class="w-px bg-gray-100" />
+                  <div
+                    class="flex-1 py-2.5 text-center text-sm text-primary flex items-center justify-center gap-1"
+                    @click="goEdit(item.id)"
+                  >
+                    <van-icon name="edit" />
+                    <span>编辑</span>
+                  </div>
+                  <div class="w-px bg-gray-100" />
+                  <div
+                    class="flex-1 py-2.5 text-center text-sm text-danger flex items-center justify-center gap-1"
+                    @click="onDelete(item.id)"
+                  >
+                    <van-icon name="delete-o" />
+                    <span>删除</span>
                   </div>
                 </div>
               </div>
