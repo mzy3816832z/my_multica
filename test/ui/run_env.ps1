@@ -29,49 +29,64 @@ if (-not (Test-Path $viteJs)) { throw "未找到前端依赖：请先 cd web && 
 $repDir = Join-Path $Root 'test\report'
 New-Item -ItemType Directory -Force -Path $repDir | Out-Null
 
-# 1) 端口预检：被占就报错退出，绝不让残留进程干扰
+# 1) 端口预检：被占就报错退出（含占用进程 PID，便于清理）
 foreach ($p in @($BackendPort, $FrontendPort)) {
-  if (Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue) {
-    throw "端口 $p 已被占用，请先清理残留的 runserver/vite 进程"
+  $c = Get-NetTCPConnection -State Listen -LocalPort $p -ErrorAction SilentlyContinue
+  if ($c) {
+    $pids = ($c | Select-Object -ExpandProperty OwningProcess -Unique) -join ','
+    throw "端口 $p 已被占用（PID: $pids），请先清理残留进程：Stop-Process -Id $pids -Force"
   }
 }
 
-# 2) 后台起后端（--noreload 单进程；USE_SQLITE 走 server\db.sqlite3）
-$env:USE_SQLITE = 'True'
-$be = Start-Process -FilePath $python `
-  -ArgumentList 'manage.py','runserver',"127.0.0.1:$BackendPort",'--noreload' `
-  -WorkingDirectory (Join-Path $Root 'server') `
-  -RedirectStandardOutput (Join-Path $repDir 'backend.log') `
-  -RedirectStandardError  (Join-Path $repDir 'backend.err.log') `
-  -PassThru -WindowStyle Hidden
-
-# 3) 后台起前端（/api 与 /uploads 代理指向后端端口）
-$env:VITE_PORT       = "$FrontendPort"
-$env:VITE_API_TARGET = $BackendUrl
-$fe = Start-Process -FilePath $node -ArgumentList $viteJs `
-  -WorkingDirectory (Join-Path $Root 'web') `
-  -RedirectStandardOutput (Join-Path $repDir 'frontend.log') `
-  -RedirectStandardError  (Join-Path $repDir 'frontend.err.log') `
-  -PassThru -WindowStyle Hidden
-
-# 4) 前台就绪探测（带超时，不空等）
+# 就绪探测：服务只要「监听并给出 HTTP 响应」就算就绪（Django 根路径返回 404 也算起来）
 function Wait-Http($url, $seconds) {
   $deadline = (Get-Date).AddSeconds($seconds)
   while ((Get-Date) -lt $deadline) {
-    try { Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 3 | Out-Null; return $true }
-    catch { Start-Sleep -Seconds 2 }
+    try {
+      Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 3 | Out-Null
+      return $true
+    } catch {
+      if ($_.Exception.Response) { return $true }  # 4xx/5xx 说明服务已起来
+      Start-Sleep -Seconds 2
+    }
   }
   return $false
 }
-if (-not (Wait-Http $BackendUrl 90)) { throw "后端未就绪，见 test\report\backend.err.log" }
-if (-not (Wait-Http $FrontendUrl 90)) { throw "前端未就绪，见 test\report\frontend.err.log" }
 
-# 5) 前台阻塞跑测试（一次性拿全量结果，约 4~6 分钟）
-$env:UI_BASE_URL = $FrontendUrl
-& $python (Join-Path $Root 'test\ui\run_ui_tests.py')
-$code = $LASTEXITCODE
+$be = $null
+$fe = $null
+$code = 1
+try {
+  # 2) 后台起后端（--noreload 单进程；USE_SQLITE 走 server\db.sqlite3）
+  $env:USE_SQLITE = 'True'
+  $be = Start-Process -FilePath $python `
+    -ArgumentList 'manage.py','runserver',"127.0.0.1:$BackendPort",'--noreload' `
+    -WorkingDirectory (Join-Path $Root 'server') `
+    -RedirectStandardOutput (Join-Path $repDir 'backend.log') `
+    -RedirectStandardError  (Join-Path $repDir 'backend.err.log') `
+    -PassThru -WindowStyle Hidden
 
-# 6) 收尾：杀掉两个服务
-Stop-Process -Id $be.Id -Force -ErrorAction SilentlyContinue
-Stop-Process -Id $fe.Id -Force -ErrorAction SilentlyContinue
+  # 3) 后台起前端（/api 与 /uploads 代理指向后端端口）
+  $env:VITE_PORT       = "$FrontendPort"
+  $env:VITE_API_TARGET = $BackendUrl
+  $fe = Start-Process -FilePath $node -ArgumentList $viteJs `
+    -WorkingDirectory (Join-Path $Root 'web') `
+    -RedirectStandardOutput (Join-Path $repDir 'frontend.log') `
+    -RedirectStandardError  (Join-Path $repDir 'frontend.err.log') `
+    -PassThru -WindowStyle Hidden
+
+  # 4) 前台就绪探测（带超时，不空等）
+  if (-not (Wait-Http $BackendUrl 90)) { throw "后端未就绪，见 test\report\backend.err.log" }
+  if (-not (Wait-Http $FrontendUrl 90)) { throw "前端未就绪，见 test\report\frontend.err.log" }
+
+  # 5) 前台阻塞跑测试（一次性拿全量结果，约 4~6 分钟）
+  $env:UI_BASE_URL = $FrontendUrl
+  & $python (Join-Path $Root 'test\ui\run_ui_tests.py')
+  $code = $LASTEXITCODE
+}
+finally {
+  # 6) 收尾：无论成功失败都杀掉两个服务，避免留下孤儿进程
+  if ($be) { Stop-Process -Id $be.Id -Force -ErrorAction SilentlyContinue }
+  if ($fe) { Stop-Process -Id $fe.Id -Force -ErrorAction SilentlyContinue }
+}
 exit $code
