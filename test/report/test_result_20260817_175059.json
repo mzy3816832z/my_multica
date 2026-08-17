@@ -1,0 +1,2341 @@
+{
+  "stamp": "20260817_175059",
+  "total": 233,
+  "passed": 203,
+  "failed": 2,
+  "skipped": 28,
+  "results": [
+    {
+      "id": "TC-AUTH-001",
+      "title": "正常注册流程",
+      "module": "认证-注册",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.1
+    },
+    {
+      "id": "TC-AUTH-002",
+      "title": "注册-手机号格式校验",
+      "module": "认证-注册",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 后端缺陷：非法号段手机号(12345678901)未被拦截，仍发送验证码(status=200)；后端仅校验长度/数字，未校验 ^1[3-9] 号段规则",
+      "shots": [
+        "FAIL_TC-AUTH-002.png"
+      ],
+      "duration": 0.7
+    },
+    {
+      "id": "TC-AUTH-009",
+      "title": "注册-两次密码不一致",
+      "module": "认证-注册",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.0
+    },
+    {
+      "id": "TC-AUTH-010",
+      "title": "未登录访问需鉴权页面",
+      "module": "认证-注册",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.3
+    },
+    {
+      "id": "TC-AUTH-011",
+      "title": "密码登录-正常流程",
+      "module": "认证-登录",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.4
+    },
+    {
+      "id": "TC-AUTH-013",
+      "title": "登录-密码错误",
+      "module": "认证-登录",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.7
+    },
+    {
+      "id": "TC-AUTH-016",
+      "title": "管理员登录-正常流程",
+      "module": "认证-登录",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.2
+    },
+    {
+      "id": "TC-AUTH-017",
+      "title": "首次登录强制身份选择",
+      "module": "认证-登录",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.5
+    },
+    {
+      "id": "TC-AUTH-018",
+      "title": "身份选择-租客",
+      "module": "认证-身份选择",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 6.6
+    },
+    {
+      "id": "TC-AUTH-022",
+      "title": "忘记密码-正常流程",
+      "module": "认证-密码管理",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.2
+    },
+    {
+      "id": "TC-APT-001",
+      "title": "房源列表-默认展示",
+      "module": "房源-列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-APT-004",
+      "title": "房源列表-名称搜索",
+      "module": "房源-列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.9
+    },
+    {
+      "id": "TC-APT-012",
+      "title": "房源列表-空状态",
+      "module": "房源-列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.9
+    },
+    {
+      "id": "TC-APT-013",
+      "title": "未登录不显示收藏按钮",
+      "module": "房源-列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-APT-014",
+      "title": "租客显示收藏按钮",
+      "module": "房源-列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-APT-015",
+      "title": "商家显示发布按钮",
+      "module": "房源-列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-APT-016",
+      "title": "租客不显示发布按钮",
+      "module": "房源-列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-APT-017",
+      "title": "房源详情-正常展示",
+      "module": "房源-详情",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.4
+    },
+    {
+      "id": "TC-APT-018",
+      "title": "房源详情-收藏/取消收藏",
+      "module": "房源-详情",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 6.1
+    },
+    {
+      "id": "TC-APT-020",
+      "title": "房源详情-点击房型卡片",
+      "module": "房源-详情",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.8
+    },
+    {
+      "id": "TC-APT-023",
+      "title": "户型详情-正常展示",
+      "module": "房源-户型详情",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.7
+    },
+    {
+      "id": "TC-FAV-006",
+      "title": "我的收藏列表",
+      "module": "收藏",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-FAV-007",
+      "title": "收藏列表空状态",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.6
+    },
+    {
+      "id": "TC-FAV-008",
+      "title": "从收藏列表取消收藏",
+      "module": "收藏",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.4
+    },
+    {
+      "id": "TC-FAV-009",
+      "title": "收藏列表点击进入详情",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 6.0
+    },
+    {
+      "id": "TC-FAV-011",
+      "title": "收藏列表-已删除房源不应展示",
+      "module": "收藏",
+      "priority": "P1",
+      "status": "fail",
+      "note": "AssertionError: 已删除房源仍显示在我的收藏列表（后端未按房源状态/删除标记过滤）；注：需求对此场景未明确，见 YUZ-200",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MSG-005",
+      "title": "消息列表空状态",
+      "module": "消息",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-MSG-006",
+      "title": "未登录访问消息",
+      "module": "消息",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.3
+    },
+    {
+      "id": "TC-AUD-001",
+      "title": "审核列表-提交审核Tab",
+      "module": "管理员审核",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-AUD-004",
+      "title": "审核列表-快捷通过",
+      "module": "管理员审核",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 7.9
+    },
+    {
+      "id": "TC-AUD-005",
+      "title": "审核列表-快捷驳回",
+      "module": "管理员审核",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 8.0
+    },
+    {
+      "id": "TC-AUD-007",
+      "title": "非管理员访问审核列表",
+      "module": "管理员审核",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-MER-001",
+      "title": "发布房源-正常流程",
+      "module": "商家房源",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.1
+    },
+    {
+      "id": "TC-MER-008",
+      "title": "非商家访问发布页",
+      "module": "商家房源",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-MER-009",
+      "title": "已上架房源列表",
+      "module": "商家房源",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-MER-057",
+      "title": "审核中列表-展示pending和rejected不含approved",
+      "module": "商家房源",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.5
+    },
+    {
+      "id": "TC-MER-064",
+      "title": "审核中列表-不展示已通过审核单",
+      "module": "商家房源",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 1.1
+    },
+    {
+      "id": "TC-MER-068",
+      "title": "审核中列表-展示已驳回审核单",
+      "module": "商家房源",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.6
+    },
+    {
+      "id": "TC-UI-001",
+      "title": "路由守卫-未登录拦截",
+      "module": "前端-路由",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.2
+    },
+    {
+      "id": "TC-UI-002",
+      "title": "路由守卫-角色权限校验",
+      "module": "前端-路由",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-UI-003",
+      "title": "404页面",
+      "module": "前端-路由",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.4
+    },
+    {
+      "id": "TC-UI-005",
+      "title": "个人中心-租客菜单",
+      "module": "前端-个人中心",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-UI-006",
+      "title": "个人中心-商家菜单",
+      "module": "前端-个人中心",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-UI-007",
+      "title": "个人中心-管理员菜单",
+      "module": "前端-个人中心",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-UI-009",
+      "title": "退出登录",
+      "module": "前端-个人中心",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.7
+    },
+    {
+      "id": "TC-UI-010",
+      "title": "登录页-模式切换",
+      "module": "前端-交互",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 1.2
+    },
+    {
+      "id": "TC-UI-012",
+      "title": "行政区街道联动",
+      "module": "前端-交互",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.2
+    },
+    {
+      "id": "TC-SEC-002",
+      "title": "SQL注入防护",
+      "module": "安全",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.9
+    },
+    {
+      "id": "TC-SEC-007",
+      "title": "Token伪造",
+      "module": "安全",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-001",
+      "title": "登录密码错误返回 401002",
+      "module": "统一响应码",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-CODE-002",
+      "title": "登录用户不存在与密码错误同码",
+      "module": "统一响应码",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-003",
+      "title": "登录验证码错误返回 401003",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-004",
+      "title": "账号禁用返回 403002",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.5
+    },
+    {
+      "id": "TC-CODE-005",
+      "title": "手机号已注册返回 409001",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.3
+    },
+    {
+      "id": "TC-CODE-006",
+      "title": "资源不存在返回 404001",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-007",
+      "title": "已下架房源详情返回 410001",
+      "module": "统一响应码",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-CODE-008",
+      "title": "未登录访问鉴权接口 401",
+      "module": "统一响应码",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-009",
+      "title": "角色越权 403",
+      "module": "统一响应码",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-010",
+      "title": "短信频控 429",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-011",
+      "title": "发布房源参数校验失败 400001",
+      "module": "统一响应码",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-012",
+      "title": "Token 刷新失败返回 401001",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CODE-013",
+      "title": "前端拦截器 410001 不弹通用 toast",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.0
+    },
+    {
+      "id": "TC-CODE-014",
+      "title": "前端拦截器业务错误统一 toast",
+      "module": "统一响应码",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 1.8
+    },
+    {
+      "id": "TC-STAT-001",
+      "title": "已上架房源下架",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-STAT-002",
+      "title": "非 published 下架被拒",
+      "module": "状态机",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-003",
+      "title": "已下架房源重新上架",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-004",
+      "title": "非 offline 重新上架被拒",
+      "module": "状态机",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-005",
+      "title": "有 pending 审核单时重新上架被拒",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-006",
+      "title": "撤回首次审核",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-STAT-007",
+      "title": "撤回变更审核",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-STAT-008",
+      "title": "其他状态撤回被拒",
+      "module": "状态机",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-STAT-009",
+      "title": "下架房源在公共列表不可见",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-010",
+      "title": "商家「已下架」Tab 列表",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-011",
+      "title": "商家状态筛选多值",
+      "module": "状态机",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-012",
+      "title": "商家默认列表仅 published",
+      "module": "状态机",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STAT-013",
+      "title": "商家后台下架/重新上架按钮联动",
+      "module": "状态机",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.1
+    },
+    {
+      "id": "TC-SHADOW-001",
+      "title": "编辑名称触发变更审核",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-002",
+      "title": "编辑位置触发变更审核",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-003",
+      "title": "编辑经纬度触发变更审核",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-004",
+      "title": "编辑封面图触发变更审核",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-005",
+      "title": "编辑房型户型触发变更审核",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-006",
+      "title": "编辑房型面积触发变更审核",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.3
+    },
+    {
+      "id": "TC-SHADOW-007",
+      "title": "编辑房型图片/内外窗触发变更审核",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-008",
+      "title": "编辑描述免审直接更新",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-009",
+      "title": "编辑联系电话免审直接更新",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-010",
+      "title": "编辑费用字段免审直接更新",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-011",
+      "title": "编辑楼层/设施/租金免审全量替换房型",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-012",
+      "title": "已有 pending 变更审核再编辑 A 类被拒",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-013",
+      "title": "变更审核期间公共列表展示旧版",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-014",
+      "title": "变更审核期间详情展示旧版",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-SHADOW-015",
+      "title": "变更审核通过应用新版本",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-016",
+      "title": "变更审核驳回恢复旧版",
+      "module": "影子发布",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-017",
+      "title": "编辑 offline 房源 A 类字段状态保持 offline",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-SHADOW-018",
+      "title": "管理员审核页变更审核中标识",
+      "module": "影子发布",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.0
+    },
+    {
+      "id": "TC-LIST-001",
+      "title": "默认按最新上架排序",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-002",
+      "title": "价格升序排序",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-003",
+      "title": "价格降序排序",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-004",
+      "title": "非法 sort 参数容错",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-005",
+      "title": "面积排序已下线",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-006",
+      "title": "按名称搜索",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-007",
+      "title": "按地址搜索",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-008",
+      "title": "按描述搜索",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-009",
+      "title": "搜索相关性排序",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-010",
+      "title": "关键词无结果空态",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-011",
+      "title": "搜索词超过 30 字截断",
+      "module": "列表",
+      "priority": "P2",
+      "status": "skip",
+      "note": "搜索框未设置 maxlength（截断可能由 JS 实现，无法静态断言）",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-LIST-012",
+      "title": "搜索历史本地记录与去重",
+      "module": "列表",
+      "priority": "P1",
+      "status": "skip",
+      "note": "搜索历史交互（搜索后弹窗关闭、历史 key 未确认）需人工定位，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-013",
+      "title": "搜索历史最多 10 条",
+      "module": "列表",
+      "priority": "P2",
+      "status": "skip",
+      "note": "搜索历史交互需人工定位，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-014",
+      "title": "搜索历史单条删除与清空",
+      "module": "列表",
+      "priority": "P1",
+      "status": "skip",
+      "note": "搜索历史交互需人工定位，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-015",
+      "title": "行政区筛选",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-016",
+      "title": "街道多选筛选",
+      "module": "列表",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-017",
+      "title": "街道联动清空",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-LIST-018",
+      "title": "户型/租期多选筛选",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-019",
+      "title": "价格区间筛选",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-020",
+      "title": "非法 district_id 容错",
+      "module": "列表",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-021",
+      "title": "旧单值参数向后兼容",
+      "module": "列表",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-LIST-022",
+      "title": "地铁站点筛选命中",
+      "module": "列表",
+      "priority": "P1",
+      "status": "skip",
+      "note": "未预置地铁站点数据",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-023",
+      "title": "地铁筛选无坐标房源不命中",
+      "module": "列表",
+      "priority": "P1",
+      "status": "skip",
+      "note": "未预置地铁站点数据",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-024",
+      "title": "地铁站点不存在返回空",
+      "module": "列表",
+      "priority": "P2",
+      "status": "skip",
+      "note": "未预置地铁站点数据",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-025",
+      "title": "分页默认与最大条数",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-LIST-026",
+      "title": "切换排序重置分页并回到顶部",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.2
+    },
+    {
+      "id": "TC-LIST-027",
+      "title": "排序接口失败降级提示",
+      "module": "列表",
+      "priority": "P2",
+      "status": "skip",
+      "note": "需模拟接口超时，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-LIST-028",
+      "title": "列表/地图视图切换",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.9
+    },
+    {
+      "id": "TC-LIST-029",
+      "title": "列表卡片展示核验徽章",
+      "module": "列表",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-MAP-001",
+      "title": "地理编码成功返回坐标",
+      "module": "地图",
+      "priority": "P0",
+      "status": "skip",
+      "note": "AMAP_KEY 未配置，无法验证地理编码成功路径",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-002",
+      "title": "地理编码未配置 Key",
+      "module": "地图",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-003",
+      "title": "地理编码失败",
+      "module": "地图",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-004",
+      "title": "地理编码地址为空校验",
+      "module": "地图",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-005",
+      "title": "地图配置接口",
+      "module": "地图",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-006",
+      "title": "无坐标房源周边 POI 返回空",
+      "module": "地图",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-007",
+      "title": "有坐标房源周边 POI",
+      "module": "地图",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-008",
+      "title": "地铁线路列表",
+      "module": "地图",
+      "priority": "P1",
+      "status": "skip",
+      "note": "未预置地铁线路数据（无数据返回空数组）",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-009",
+      "title": "发布页地理编码落点",
+      "module": "地图",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-MAP-010",
+      "title": "地理编码失败可手动打点",
+      "module": "地图",
+      "priority": "P0",
+      "status": "skip",
+      "note": "需模拟地理编码失败 + 地图交互，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-MAP-011",
+      "title": "发布未定位房源可提交",
+      "module": "地图",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-MAP-012",
+      "title": "存量补坐标命令",
+      "module": "地图",
+      "priority": "P2",
+      "status": "skip",
+      "note": "需运行 Django 管理命令，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CMP-001",
+      "title": "两套房源对比",
+      "module": "对比",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-CMP-002",
+      "title": "三套房源对比",
+      "module": "对比",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-CMP-003",
+      "title": "少于 2 套被拒",
+      "module": "对比",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CMP-004",
+      "title": "超过 3 套被拒",
+      "module": "对比",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CMP-005",
+      "title": "ids 为空被拒",
+      "module": "对比",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CMP-006",
+      "title": "ids 非法格式",
+      "module": "对比",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CMP-007",
+      "title": "对比含不可见房源自动过滤",
+      "module": "对比",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-CMP-008",
+      "title": "长按进入对比模式",
+      "module": "对比",
+      "priority": "P1",
+      "status": "skip",
+      "note": "长按进入对比模式需精确手势交互定位，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-CMP-009",
+      "title": "对比最多选 3 套",
+      "module": "对比",
+      "priority": "P1",
+      "status": "skip",
+      "note": "需长按选择 3 套后尝试选第 4 套，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-HIS-001",
+      "title": "浏览历史记录",
+      "module": "浏览历史",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.3
+    },
+    {
+      "id": "TC-HIS-002",
+      "title": "浏览历史空态",
+      "module": "浏览历史",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 3.8
+    },
+    {
+      "id": "TC-HIS-003",
+      "title": "清空浏览历史",
+      "module": "浏览历史",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 4.7
+    },
+    {
+      "id": "TC-HIS-004",
+      "title": "历史点击进入详情",
+      "module": "浏览历史",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.8
+    },
+    {
+      "id": "TC-HIS-005",
+      "title": "未登录可用",
+      "module": "浏览历史",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.3
+    },
+    {
+      "id": "TC-PUB-001",
+      "title": "面积必填校验（前端）",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "skip",
+      "note": "面积必填校验需打开房型弹窗并提交空面积，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-PUB-002",
+      "title": "面积合法值（边界 0.5）",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-003",
+      "title": "面积合法值（边界 500）",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-004",
+      "title": "面积非法值（0.4）",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-005",
+      "title": "面积非法值（500.1）",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-006",
+      "title": "面积后端允许为空（差异标注）",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-007",
+      "title": "可入住时间选择",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "skip",
+      "note": "可入住时间选择需打开房型弹窗并操作日期组件，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-PUB-008",
+      "title": "物业费 0 / 水电 civilian / 服务费 0",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-009",
+      "title": "物业费非法值（负数）",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-010",
+      "title": "水电费非法编码",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-PUB-011",
+      "title": "其他费用超长（101 字）",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-PUB-012",
+      "title": "发布页实拍提示文案",
+      "module": "发布字段",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-PUB-013",
+      "title": "房型图片拖拽排序",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "skip",
+      "note": "拖拽排序需上传多图 + 拖拽交互，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-PUB-014",
+      "title": "上传失败单张重试",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "skip",
+      "note": "需模拟上传失败，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-PUB-015",
+      "title": "草稿自动保存与恢复",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "skip",
+      "note": "发布页未使用 localStorage 草稿键（或键名不同）",
+      "shots": [],
+      "duration": 2.8
+    },
+    {
+      "id": "TC-PUB-016",
+      "title": "提交成功后清除草稿",
+      "module": "发布字段",
+      "priority": "P1",
+      "status": "skip",
+      "note": "依赖草稿恢复弹窗交互，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-VER-001",
+      "title": "管理员设置核验标识",
+      "module": "平台核验",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-VER-002",
+      "title": "管理员取消核验标识",
+      "module": "平台核验",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-VER-003",
+      "title": "审核通过时勾选核验",
+      "module": "平台核验",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-VER-004",
+      "title": "非管理员设置核验被拒",
+      "module": "平台核验",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-VER-005",
+      "title": "详情页展示商家认证信息",
+      "module": "平台核验",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STS-001",
+      "title": "商家统计返回浏览与收藏",
+      "module": "商家统计",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-STS-002",
+      "title": "浏览量按用户+天去重",
+      "module": "商家统计",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-STS-003",
+      "title": "商家查看自己房源不计浏览",
+      "module": "商家统计",
+      "priority": "P2",
+      "status": "skip",
+      "note": "依赖浏览日志按用户类型过滤，需对比前后计数，本轮简化跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-STS-004",
+      "title": "非商家访问统计被拒",
+      "module": "商家统计",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-STS-005",
+      "title": "商家后台顶部统计展示",
+      "module": "商家统计",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-NOTIFY-001",
+      "title": "首次驳回消息点击跳编辑页",
+      "module": "消息跳转",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 5.1
+    },
+    {
+      "id": "TC-NOTIFY-002",
+      "title": "变更驳回消息点击跳编辑页",
+      "module": "消息跳转",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-NOTIFY-003",
+      "title": "审核通过消息点击跳详情页",
+      "module": "消息跳转",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.3
+    },
+    {
+      "id": "TC-NOTIFY-004",
+      "title": "消息关联房源已删除降级",
+      "module": "消息跳转",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-NOTIFY-005",
+      "title": "系统通知点击不跳转",
+      "module": "消息跳转",
+      "priority": "P1",
+      "status": "skip",
+      "note": "需系统类型消息数据，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-NOTIFY-006",
+      "title": "消息列表展示关联房源名与类型标签",
+      "module": "消息跳转",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 2.9
+    },
+    {
+      "id": "TC-TOKEN-001",
+      "title": "access 过期自动 refresh 重放",
+      "module": "Token刷新",
+      "priority": "P0",
+      "status": "skip",
+      "note": "需精确控制 access 过期时间，本轮以接口层 TC-TOKEN-005 覆盖 refresh 逻辑",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-TOKEN-002",
+      "title": "refresh 也过期则登出",
+      "module": "Token刷新",
+      "priority": "P0",
+      "status": "skip",
+      "note": "需精确控制双 token 过期时间，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-TOKEN-003",
+      "title": "并发请求仅一次 refresh",
+      "module": "Token刷新",
+      "priority": "P1",
+      "status": "skip",
+      "note": "需前端并发观测，本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-TOKEN-004",
+      "title": "refresh 接口返回 401001 走登出",
+      "module": "Token刷新",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-TOKEN-005",
+      "title": "refresh 返回新 token 双 token 更新",
+      "module": "Token刷新",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.5
+    },
+    {
+      "id": "TC-AUDIT-001",
+      "title": "变更审核详情对比展示与变更字段高亮",
+      "module": "审核详情",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-AUDIT-002",
+      "title": "变更审核详情影子发布标识",
+      "module": "审核详情",
+      "priority": "P1",
+      "status": "skip",
+      "note": "需打开变更审核详情页核对警示文案，接口层已由 TC-SHADOW-018 覆盖",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-AUDIT-003",
+      "title": "审核详情勾选平台核验后通过",
+      "module": "审核详情",
+      "priority": "P1",
+      "status": "skip",
+      "note": "由 TC-VER-003 覆盖",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-AUDIT-004",
+      "title": "驳回原因必填（空）",
+      "module": "审核详情",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-AUDIT-005",
+      "title": "驳回原因纯空格被拒",
+      "module": "审核详情",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-AUDIT-006",
+      "title": "已处理审核单重复操作",
+      "module": "审核详情",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-AUDIT-007",
+      "title": "商家审核列表仅展示 pending/rejected",
+      "module": "商家审核",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 1.1
+    },
+    {
+      "id": "TC-AUDIT-008",
+      "title": "商家审核列表 pending 优先排序",
+      "module": "商家审核",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 1.2
+    },
+    {
+      "id": "TC-AUDIT-009",
+      "title": "商家审核列表撤回按钮联动",
+      "module": "商家审核",
+      "priority": "P0",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "TC-AUDIT-010",
+      "title": "删除房源同步软删除 pending 审核单",
+      "module": "商家审核",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "TC-AUDIT-011",
+      "title": "软删除兜底：已删除房源关联 rejected 审核单",
+      "module": "商家审核",
+      "priority": "P2",
+      "status": "skip",
+      "note": "需求待澄清（潜在缺陷），本轮跳过",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "TC-AUDIT-012",
+      "title": "change_reviewing 房源不显示在已上架 Tab",
+      "module": "商家审核",
+      "priority": "P1",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-1-01",
+      "title": "列表组合筛选 PICT-1-01",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "PICT-1-02",
+      "title": "列表组合筛选 PICT-1-02",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-03",
+      "title": "列表组合筛选 PICT-1-03",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-04",
+      "title": "列表组合筛选 PICT-1-04",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-05",
+      "title": "列表组合筛选 PICT-1-05",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-06",
+      "title": "列表组合筛选 PICT-1-06",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-07",
+      "title": "列表组合筛选 PICT-1-07",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-08",
+      "title": "列表组合筛选 PICT-1-08",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-09",
+      "title": "列表组合筛选 PICT-1-09",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-10",
+      "title": "列表组合筛选 PICT-1-10",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-11",
+      "title": "列表组合筛选 PICT-1-11",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-12",
+      "title": "列表组合筛选 PICT-1-12",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-13",
+      "title": "列表组合筛选 PICT-1-13",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-14",
+      "title": "列表组合筛选 PICT-1-14",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-15",
+      "title": "列表组合筛选 PICT-1-15",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-16",
+      "title": "列表组合筛选 PICT-1-16",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.1
+    },
+    {
+      "id": "PICT-1-17",
+      "title": "列表组合筛选 PICT-1-17",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-18",
+      "title": "列表组合筛选 PICT-1-18",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-19",
+      "title": "列表组合筛选 PICT-1-19",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-20",
+      "title": "列表组合筛选 PICT-1-20",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-21",
+      "title": "列表组合筛选 PICT-1-21",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-22",
+      "title": "列表组合筛选 PICT-1-22",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-23",
+      "title": "列表组合筛选 PICT-1-23",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-24",
+      "title": "列表组合筛选 PICT-1-24",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-1-25",
+      "title": "列表组合筛选 PICT-1-25",
+      "module": "PICT-1 列表筛选",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.0
+    },
+    {
+      "id": "PICT-2-01",
+      "title": "编辑变更审核触发 PICT-2-01 (apt_A/published/yes)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-02",
+      "title": "编辑变更审核触发 PICT-2-02 (apt_A/offline/no)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-03",
+      "title": "编辑变更审核触发 PICT-2-03 (room_A/published/no)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.3
+    },
+    {
+      "id": "PICT-2-04",
+      "title": "编辑变更审核触发 PICT-2-04 (room_A/offline/yes)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-05",
+      "title": "编辑变更审核触发 PICT-2-05 (apt_exempt/published/yes)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-06",
+      "title": "编辑变更审核触发 PICT-2-06 (apt_exempt/offline/no)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-07",
+      "title": "编辑变更审核触发 PICT-2-07 (room_exempt/published/yes)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-08",
+      "title": "编辑变更审核触发 PICT-2-08 (room_exempt/offline/no)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-09",
+      "title": "编辑变更审核触发 PICT-2-09 (mixed_A_exempt/published/yes)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    },
+    {
+      "id": "PICT-2-10",
+      "title": "编辑变更审核触发 PICT-2-10 (mixed_A_exempt/offline/no)",
+      "module": "PICT-2 变更审核",
+      "priority": "P2",
+      "status": "pass",
+      "note": "",
+      "shots": [],
+      "duration": 0.2
+    }
+  ]
+}
