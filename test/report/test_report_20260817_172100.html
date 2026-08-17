@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>UI自动化测试报告 - 20260817_172100</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; margin: 24px; color: #333; }
+  h1 { font-size: 22px; }
+  .summary { display: flex; gap: 16px; margin: 16px 0; }
+  .card { border-radius: 8px; padding: 14px 22px; color: #fff; }
+  .card.total { background: #576b95; } .card.pass { background: #07c160; }
+  .card.fail { background: #fa5151; } .card.skip { background: #c8c9cc; }
+  .card .num { font-size: 28px; font-weight: bold; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #ebedf0; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f7f8fa; }
+  tr.pass td.status { color: #07c160; font-weight: bold; }
+  tr.fail td.status { color: #fa5151; font-weight: bold; }
+  tr.skip td.status { color: #969799; }
+  tr.fail { background: #fff7f7; }
+  .thumb { max-width: 140px; max-height: 180px; border: 1px solid #ddd; border-radius: 4px; margin: 2px; }
+  .note { max-width: 320px; word-break: break-all; }
+  .meta { color: #969799; font-size: 13px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<h1>上海公寓租赁平台 H5 UI 自动化测试报告</h1>
+<div class="meta">
+  执行时间: 2026-08-17 17:24:03 &nbsp;|&nbsp;
+  环境: Chromium (iPhone 12 视口 390x844) + Vue3/Vite (:5174) + Django/SQLite &nbsp;|&nbsp;
+  总耗时: 175.7s
+</div>
+<div class="summary">
+  <div class="card total"><div class="num">49</div><div>用例总数</div></div>
+  <div class="card pass"><div class="num">47</div><div>通过</div></div>
+  <div class="card fail"><div class="num">2</div><div>失败</div></div>
+  <div class="card skip"><div class="num">0</div><div>跳过</div></div>
+</div>
+<table>
+  <thead><tr>
+    <th>用例ID</th><th>标题</th><th>模块</th><th>优先级</th><th>结果</th><th>耗时</th><th>备注/错误分析</th><th>截图证据</th>
+  </tr></thead>
+  <tbody>
+      <tr class="pass">
+        <td>TC-AUTH-001</td><td>正常注册流程</td><td>认证-注册</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>4.5s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="fail">
+        <td>TC-AUTH-002</td><td>注册-手机号格式校验</td><td>认证-注册</td><td>P1</td>
+        <td class="status">❌ 失败</td><td>0.8s</td>
+        <td class="note">AssertionError: 后端缺陷：非法号段手机号(12345678901)未被拦截，仍发送验证码(status=200)；后端仅校验长度/数字，未校验 ^1[3-9] 号段规则</td><td><a href="evidence/FAIL_TC-AUTH-002.png" target="_blank"><img src="evidence/FAIL_TC-AUTH-002.png" class="thumb" alt="FAIL_TC-AUTH-002.png"></a></td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-009</td><td>注册-两次密码不一致</td><td>认证-注册</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.1s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-010</td><td>未登录访问需鉴权页面</td><td>认证-注册</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.3s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-011</td><td>密码登录-正常流程</td><td>认证-登录</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>3.3s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-013</td><td>登录-密码错误</td><td>认证-登录</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.7s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-016</td><td>管理员登录-正常流程</td><td>认证-登录</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>3.3s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-017</td><td>首次登录强制身份选择</td><td>认证-登录</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>3.4s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-018</td><td>身份选择-租客</td><td>认证-身份选择</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>6.6s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUTH-022</td><td>忘记密码-正常流程</td><td>认证-密码管理</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>4.3s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-001</td><td>房源列表-默认展示</td><td>房源-列表</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-004</td><td>房源列表-名称搜索</td><td>房源-列表</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>4.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-012</td><td>房源列表-空状态</td><td>房源-列表</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>5.0s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-013</td><td>未登录不显示收藏按钮</td><td>房源-列表</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-014</td><td>租客显示收藏按钮</td><td>房源-列表</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-015</td><td>商家显示发布按钮</td><td>房源-列表</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-016</td><td>租客不显示发布按钮</td><td>房源-列表</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-017</td><td>房源详情-正常展示</td><td>房源-详情</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>5.5s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-018</td><td>房源详情-收藏/取消收藏</td><td>房源-详情</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>6.1s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-020</td><td>房源详情-点击房型卡片</td><td>房源-详情</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>5.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-APT-023</td><td>户型详情-正常展示</td><td>房源-户型详情</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-FAV-006</td><td>我的收藏列表</td><td>收藏</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-FAV-007</td><td>收藏列表空状态</td><td>收藏</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>3.7s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-FAV-008</td><td>从收藏列表取消收藏</td><td>收藏</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>5.5s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-FAV-009</td><td>收藏列表点击进入详情</td><td>收藏</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>6.0s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="fail">
+        <td>TC-FAV-011</td><td>收藏列表-已删除房源不应展示</td><td>收藏</td><td>P1</td>
+        <td class="status">❌ 失败</td><td>0.1s</td>
+        <td class="note">AssertionError: 已删除房源仍显示在我的收藏列表（后端未按房源状态/删除标记过滤）；注：需求对此场景未明确，见 YUZ-200</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MSG-005</td><td>消息列表空状态</td><td>消息</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MSG-006</td><td>未登录访问消息</td><td>消息</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.2s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUD-001</td><td>审核列表-提交审核Tab</td><td>管理员审核</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>3.0s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUD-004</td><td>审核列表-快捷通过</td><td>管理员审核</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>7.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUD-005</td><td>审核列表-快捷驳回</td><td>管理员审核</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>8.2s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-AUD-007</td><td>非管理员访问审核列表</td><td>管理员审核</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MER-001</td><td>发布房源-正常流程</td><td>商家房源</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>3.0s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MER-008</td><td>非商家访问发布页</td><td>商家房源</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MER-009</td><td>已上架房源列表</td><td>商家房源</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MER-057</td><td>审核中列表-展示pending和rejected不含approved</td><td>商家房源</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>5.4s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MER-064</td><td>审核中列表-不展示已通过审核单</td><td>商家房源</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>1.1s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-MER-068</td><td>审核中列表-展示已驳回审核单</td><td>商家房源</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>5.5s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-001</td><td>路由守卫-未登录拦截</td><td>前端-路由</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.3s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-002</td><td>路由守卫-角色权限校验</td><td>前端-路由</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-003</td><td>404页面</td><td>前端-路由</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>2.2s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-005</td><td>个人中心-租客菜单</td><td>前端-个人中心</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-006</td><td>个人中心-商家菜单</td><td>前端-个人中心</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-007</td><td>个人中心-管理员菜单</td><td>前端-个人中心</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>2.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-009</td><td>退出登录</td><td>前端-个人中心</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>5.8s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-010</td><td>登录页-模式切换</td><td>前端-交互</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>1.2s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-UI-012</td><td>行政区街道联动</td><td>前端-交互</td><td>P0</td>
+        <td class="status">✅ 通过</td><td>4.1s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-SEC-002</td><td>SQL注入防护</td><td>安全</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>4.9s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+      <tr class="pass">
+        <td>TC-SEC-007</td><td>Token伪造</td><td>安全</td><td>P1</td>
+        <td class="status">✅ 通过</td><td>0.0s</td>
+        <td class="note">-</td><td>-</td>
+      </tr>
+  </tbody>
+</table>
+</body></html>
