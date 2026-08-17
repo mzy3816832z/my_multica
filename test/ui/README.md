@@ -8,7 +8,7 @@
 powershell -ExecutionPolicy Bypass -File test\ui\run_env.ps1
 ```
 
-脚本自动完成：端口预检 → 后台起后端(SQLite, `--noreload`) + 前端(Vite, 锁定 5173) → 就绪探测 → 前台阻塞跑 `run_ui_tests.py` → 杀掉两个服务。**后台启动 + 前台阻塞跑测试 + 同一轮内收尾**，避免长驻服务在前台卡住不返回。
+脚本自动完成：端口预检 → 后台起后端(SQLite, `--noreload`) + 前端(Vite) → 就绪探测 → 前台阻塞跑 `run_ui_tests.py` → 杀掉两个服务。**后台启动 + 前台阻塞跑测试 + 同一轮内收尾**，避免长驻服务在前台卡住不返回。端口默认后端 `8001`、前端 `5174`，刻意避开常见的本地开发环境(8000/5173)；可用 `TEST_BACKEND_PORT` / `TEST_FRONTEND_PORT` 覆盖。
 
 ### 前置（一次性）
 
@@ -30,8 +30,10 @@ cd ..
 |---|---|---|
 | 后端 | `runserver` | `127.0.0.1:8001`（脚本内 `$BackendPort`） |
 | 前端 Vite | `VITE_API_TARGET` | `http://127.0.0.1:8001`（`/api`、`/uploads` 代理目标） |
-| 前端 Vite | `VITE_PORT` | `5173` |
-| 测试脚本 | `UI_BASE_URL` | `http://localhost:5173` |
+| 前端 Vite | `VITE_PORT` | `5174`（脚本内 `$FrontendPort`） |
+| 测试脚本 | `UI_BASE_URL` | `http://localhost:5174` |
+
+> 三处由 `run_env.ps1` 自动保持一致；若手动改端口，务必同时改 `TEST_BACKEND_PORT` / `TEST_FRONTEND_PORT`。
 
 ## 手动执行（不推荐，易因前台起服务而卡住）
 

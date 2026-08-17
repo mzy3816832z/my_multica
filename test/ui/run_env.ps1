@@ -11,8 +11,9 @@
 $ErrorActionPreference = 'Stop'
 $Root = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 
-$BackendPort  = 8001
-$FrontendPort = 5173
+# 端口默认值刻意避开常见的本地开发环境(8000/5173)，避免和手动起的服务撞端口
+$BackendPort  = if ($env:TEST_BACKEND_PORT)  { [int]$env:TEST_BACKEND_PORT }  else { 8001 }
+$FrontendPort = if ($env:TEST_FRONTEND_PORT) { [int]$env:TEST_FRONTEND_PORT } else { 5174 }
 $BackendUrl   = "http://127.0.0.1:$BackendPort"
 $FrontendUrl  = "http://localhost:$FrontendPort"
 
@@ -44,7 +45,7 @@ $be = Start-Process -FilePath $python `
   -RedirectStandardError  (Join-Path $repDir 'backend.err.log') `
   -PassThru -WindowStyle Hidden
 
-# 3) 后台起前端（锁定 5173，/api 与 /uploads 代理指向后端端口）
+# 3) 后台起前端（/api 与 /uploads 代理指向后端端口）
 $env:VITE_PORT       = "$FrontendPort"
 $env:VITE_API_TARGET = $BackendUrl
 $fe = Start-Process -FilePath $node -ArgumentList $viteJs `
