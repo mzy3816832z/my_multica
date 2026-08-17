@@ -794,6 +794,11 @@ def tc_fav_009():
     """收藏列表点击进入详情（应跳转 /apartments/{apartment_id}，非收藏记录ID）"""
     # 接口层：拿到收藏记录 id 与 apartment_id，校验前端跳转用的是 apartment_id
     favs = api('/favorites/my/', body={'page': 1, 'page_size': 10}, token=STATE['tenant_token'])
+    if not favs.get('items'):
+        # TC-FAV-008 会取消收藏，导致本用例无数据；重新收藏以保证用例独立
+        api('/favorites/', 'POST', {'apartment_id': STATE['apt2_id']}, token=STATE['tenant_token'])
+        time.sleep(0.5)
+        favs = api('/favorites/my/', body={'page': 1, 'page_size': 10}, token=STATE['tenant_token'])
     items = favs.get('items', [])
     expect(items, '无收藏记录，无法测试点击进详情')
     fav = items[0]
@@ -820,6 +825,10 @@ def tc_fav_011():
     """收藏列表-已删除/未上架房源不应展示（需求待澄清，当前标记文档缺口）"""
     # 准备：租客收藏一套房源，然后商家删除它
     favs = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
+    if not favs.get('items'):
+        api('/favorites/', 'POST', {'apartment_id': STATE['apt2_id']}, token=STATE['tenant_token'])
+        time.sleep(0.5)
+        favs = api('/favorites/my/', body={'page': 1, 'page_size': 50}, token=STATE['tenant_token'])
     items = favs.get('items', [])
     if not items:
         raise SkipCase('无收藏记录')
