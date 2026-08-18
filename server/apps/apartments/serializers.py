@@ -482,6 +482,7 @@ class RoomTypeListSerializer(serializers.Serializer):
     area = serializers.DecimalField(max_digits=5, decimal_places=1, help_text='面积（㎡）', allow_null=True)
     available_date = serializers.DateField(help_text='可入住日期', allow_null=True)
     min_monthly_rent = serializers.SerializerMethodField(help_text='该房型最低月租金')
+    rental_plans = RentalPlanListSerializer(many=True, help_text='租期租金方案列表')
 
     def get_layout_type_label(self, obj):
         return get_dict_label('layout_type', obj.layout_type)

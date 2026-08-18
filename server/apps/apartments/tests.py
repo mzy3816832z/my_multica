@@ -829,6 +829,19 @@ class MerchantApartmentDetailTests(TestCase):
         self.assertEqual(data['pending_audit'], False)
         self.assertIn('room_types', data)
 
+    def test_detail_room_types_include_rental_plans(self):
+        """房型列表回显租金方案（编辑页回显）"""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.landlord_token}')
+        response = self.client.get(f'/api/v1/merchant/apartments/{self.apartment.id}/')
+        data = response.json()['data']
+        room_types = data['room_types']
+        self.assertEqual(len(room_types), 1)
+        plans = room_types[0]['rental_plans']
+        self.assertEqual(len(plans), 1)
+        self.assertEqual(plans[0]['lease_term'], '1_month')
+        self.assertEqual(plans[0]['monthly_rent'], 3000)
+        self.assertEqual(plans[0]['payment_method'], 'pay_1_deposit_1')
+
     def test_detail_not_own(self):
         """获取他人房源详情返回 404"""
         token = self._get_token(self.other_landlord)
