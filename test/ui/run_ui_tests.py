@@ -1062,6 +1062,93 @@ def tc_mer_068():
            '前端审核中Tab未展示已驳回审核单')
 
 
+# ---------- 编辑房源页 UI（对应 README 6.6/6.7 编辑页用例）----------
+def _create_edit_apt():
+    """创建一套已知内容的已上架房源（名称/描述/电话/门牌/房型均确定），返回 apt_id。"""
+    name = '编辑页测试公寓'
+    apt = create_apartment(STATE['merchant_token'], name)
+    apt_id = apt.get('apartment_id') or apt.get('id')
+    admin_approve_first_pending(STATE['admin_token'], apartment_id=apt_id)
+    return apt_id, name
+
+
+def _open_edit_page(apt_id):
+    new_context(storage_state=auth_state(STATE['merchant_token'], STATE['merchant_user']))
+    PAGE.goto(f'{BASE_URL}/profile/apartments/{apt_id}/edit')
+    # 等「保存修改」按钮出现（即 loadingDetail 结束、表单与数据回显完成），规避首访路由冷编译慢
+    PAGE.wait_for_selector('xpath=//button[normalize-space()="保存修改"]', timeout=20000)
+    PAGE.wait_for_timeout(800)
+
+
+def tc_mer_070():
+    """编辑页-基础信息回显（校验表单字段值，非页面文本）"""
+    apt_id, name = _create_edit_apt()
+    _open_edit_page(apt_id)
+    shot('TC-MER-070_edit_basic')
+    sa = SoftAssert()
+    name_input = PAGE.query_selector('input[placeholder*="公寓名称"]')
+    sa.check(name_input is not None and name_input.input_value() == name,
+             f'编辑页未回显公寓名称: {name_input.input_value() if name_input else None}')
+    desc = PAGE.query_selector('textarea[placeholder*="描述"]')
+    sa.check(desc is not None and '近地铁，精装修，拎包入住' in desc.input_value(),
+             f'编辑页未回显描述: {desc.input_value() if desc else None}')
+    phone = PAGE.query_selector('input[placeholder*="联系电话"]')
+    sa.check(phone is not None and phone.input_value() == '13800138000',
+             f'编辑页未回显联系电话: {phone.input_value() if phone else None}')
+    addr = PAGE.query_selector('input[placeholder*="门牌号"]')
+    sa.check(addr is not None and addr.input_value() == '测试路100弄1号',
+             f'编辑页未回显门牌号: {addr.input_value() if addr else None}')
+    sa.assert_all()
+
+
+def tc_mer_071():
+    """编辑页-房型列表回显（含户型中文标签/楼层/租金方案组数）"""
+    apt_id, name = _create_edit_apt()
+    _open_edit_page(apt_id)
+    shot('TC-MER-071_edit_rooms')
+    body_text = PAGE.inner_text('body')
+    sa = SoftAssert()
+    sa.check('温馨一居室' in body_text, '编辑页未回显房型名称')
+    sa.check('一室一厅' in body_text, '编辑页未回显户型中文标签（应为一室一厅）')
+    sa.check('3层' in body_text, '编辑页未回显楼层')
+    sa.check('2 组方案' in body_text,
+             '编辑页租金方案组数回显错误：应为「2 组方案」实际「0 组方案」（商家详情接口 room_types 缺 rental_plans 字段）')
+    sa.assert_all()
+
+
+def tc_mer_072():
+    """编辑页-房型弹窗回显"""
+    apt_id, name = _create_edit_apt()
+    _open_edit_page(apt_id)
+    edit_icon = PAGE.query_selector('.van-icon-edit')
+    expect(edit_icon is not None, '未找到房型编辑图标')
+    edit_icon.click()
+    PAGE.wait_for_timeout(1500)
+    shot('TC-MER-072_room_modal')
+    body_text = PAGE.inner_text('body')
+    sa = SoftAssert()
+    sa.check('编辑房型' in body_text, '房型弹窗未打开')
+    sa.check('温馨一居室' in body_text, '房型弹窗未回显房型名称')
+    sa.assert_all()
+
+
+def tc_mer_074():
+    """编辑-修改描述（免审字段）直接更新"""
+    apt_id, name = _create_edit_apt()
+    _open_edit_page(apt_id)
+    desc = PAGE.query_selector('textarea')
+    expect(desc is not None, '未找到描述输入框')
+    desc.fill('编辑页修改后的描述内容')
+    PAGE.wait_for_timeout(300)
+    shot('TC-MER-074_edit_desc')
+    PAGE.click('xpath=//button[normalize-space()="保存修改"]')
+    PAGE.wait_for_timeout(3000)
+    shot('TC-MER-074_after_save')
+    detail = api(f'/merchant/apartments/{apt_id}/', token=STATE['merchant_token'])
+    expect(detail.get('description') == '编辑页修改后的描述内容',
+           f'描述未直接更新（编辑保存失败：房型空租金方案导致后端校验不通过）: {detail.get("description")}')
+
+
 # ---------- 七、前端页面/UI ----------
 def tc_ui_001():
     """路由守卫-未登录拦截"""
@@ -1333,6 +1420,10 @@ CASES = [
     ('TC-MER-057', '审核中列表-展示pending和rejected不含approved', '商家房源', 'P0', tc_mer_057),
     ('TC-MER-064', '审核中列表-不展示已通过审核单', '商家房源', 'P1', tc_mer_064),
     ('TC-MER-068', '审核中列表-展示已驳回审核单', '商家房源', 'P1', tc_mer_068),
+    ('TC-MER-070', '编辑页-基础信息回显', '商家房源-编辑', 'P0', tc_mer_070),
+    ('TC-MER-071', '编辑页-房型列表回显（含租金方案）', '商家房源-编辑', 'P0', tc_mer_071),
+    ('TC-MER-072', '编辑页-房型弹窗回显', '商家房源-编辑', 'P1', tc_mer_072),
+    ('TC-MER-074', '编辑-修改描述（免审字段）直接更新', '商家房源-编辑', 'P0', tc_mer_074),
     # 前端 UI
     ('TC-UI-001', '路由守卫-未登录拦截', '前端-路由', 'P0', tc_ui_001),
     ('TC-UI-002', '路由守卫-角色权限校验', '前端-路由', 'P0', tc_ui_002),
